@@ -1,0 +1,1803 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>词汇工坊 · PDF词库学习助手</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2324435E'/%3E%3Cpath d='M18 20v26l10-5 8 5V20l-8 5z' fill='%23F7F3EA'/%3E%3Ccircle cx='46' cy='20' r='6' fill='%23D97B29'/%3E%3C/svg%3E">
+<style>
+/* ============ 基础 ============ */
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#F2F4F7; --surface:#FFFFFF; --ink:#1C2733; --ink-2:#5A6B7B; --ink-3:#93A1AF;
+  --primary:#24435E; --primary-soft:#E8EEF4; --accent:#D97B29; --accent-soft:#FBF0E3;
+  --success:#3E7C4F; --success-soft:#E7F0E9; --danger:#B3432F; --danger-soft:#F9EAE7;
+  --border:#E2E7EC; --radius:14px;
+  --shadow:0 1px 2px rgba(16,34,52,.05),0 6px 18px rgba(16,34,52,.06);
+  --font-serif:'Noto Serif SC','Songti SC',serif;
+  --font-sans:'Noto Sans SC',system-ui,-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;
+}
+html,body{height:100%}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit}
+::selection{background:rgba(217,123,41,.2)}
+/* 滚动条 */
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#CBD5E0;border-radius:6px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ============ 布局 ============ */
+#app{display:flex;min-height:100vh}
+.sidebar{
+  width:230px;flex-shrink:0;background:var(--primary);color:#EAF0F6;
+  display:flex;flex-direction:column;padding:22px 14px;position:sticky;top:0;height:100vh;
+}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 10px 20px}
+.brand-mark{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand-name{font-family:var(--font-serif);font-weight:700;font-size:19px;letter-spacing:2px}
+.brand-sub{font-size:11px;color:#AEC3D6;margin-top:1px;letter-spacing:1px}
+.nav{display:flex;flex-direction:column;gap:4px;flex:1}
+.nav-item{
+  display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;
+  color:#C4D5E4;font-size:14px;font-weight:500;transition:background .15s,color .15s;text-align:left;
+}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.16);color:#fff;font-weight:700}
+.nav-item svg{width:18px;height:18px;flex-shrink:0}
+.sidebar-foot{padding:10px 12px;font-size:12px;color:#8FA9BF}
+.sidebar-foot button{display:flex;align-items:center;gap:9px;color:#C4D5E4;font-size:13px;padding:8px 0;width:100%}
+.sidebar-foot button:hover{color:#fff}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{
+  display:flex;align-items:center;gap:14px;padding:14px 26px;background:var(--surface);
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20;
+}
+.topbar-title{font-family:var(--font-serif);font-size:20px;font-weight:700;white-space:nowrap}
+.lib-picker{
+  display:flex;align-items:center;gap:8px;margin-left:8px;background:var(--bg);border:1px solid var(--border);
+  border-radius:10px;padding:6px 12px;font-size:13px;color:var(--ink-2);max-width:240px;
+}
+.lib-picker select{border:none;background:none;font-family:inherit;font-size:13px;color:var(--ink);outline:none;max-width:170px;cursor:pointer}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:6px 12px;flex:1;max-width:340px;margin-left:auto}
+.search-box svg{width:15px;height:15px;color:var(--ink-3);flex-shrink:0}
+.search-box input{border:none;background:none;outline:none;width:100%;font-size:13px;color:var(--ink)}
+.search-box input::placeholder{color:var(--ink-3)}
+.content{flex:1;padding:24px 26px 60px;max-width:1080px;width:100%;margin:0 auto}
+.view{display:none}
+.view.active{display:block;animation:fadeIn .22s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ============ 通用组件 ============ */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:10px;
+  font-size:13.5px;font-weight:600;transition:all .15s;border:1px solid transparent;
+}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:#1B3550}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-accent:hover{background:#C76E1F}
+.btn-ghost{background:var(--surface);border-color:var(--border);color:var(--ink-2)}
+.btn-ghost:hover{border-color:var(--ink-3);color:var(--ink)}
+.btn-danger-ghost{background:var(--surface);border-color:var(--border);color:var(--danger)}
+.btn-danger-ghost:hover{border-color:var(--danger)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn svg{width:15px;height:15px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap}
+.section-head h2{font-family:var(--font-serif);font-size:19px;font-weight:700}
+.section-head .desc{color:var(--ink-2);font-size:12.5px;margin-top:2px}
+.muted{color:var(--ink-2)}
+.empty{
+  text-align:center;padding:56px 20px;color:var(--ink-2);
+}
+.empty .empty-icon{width:56px;height:56px;margin:0 auto 14px;border-radius:16px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center}
+.empty .empty-icon svg{width:26px;height:26px;color:var(--primary)}
+.empty h3{font-size:15.5px;color:var(--ink);margin-bottom:6px}
+.empty p{font-size:13px;margin-bottom:18px}
+.progress{height:6px;background:var(--bg);border-radius:4px;overflow:hidden}
+.progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--primary),#4A7396);border-radius:4px;transition:width .4s ease}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px}
+.badge-blue{background:var(--primary-soft);color:var(--primary)}
+.badge-orange{background:var(--accent-soft);color:var(--accent)}
+.badge-green{background:var(--success-soft);color:var(--success)}
+.badge-red{background:var(--danger-soft);color:var(--danger)}
+.badge-gray{background:var(--bg);color:var(--ink-2)}
+.tag{font-size:11px;color:var(--ink-3);border:1px solid var(--border);padding:1px 8px;border-radius:6px;margin-left:6px}
+table.list-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.list-table th{font-size:11.5px;color:var(--ink-3);font-weight:600;text-align:left;padding:8px 12px;border-bottom:1px solid var(--border)}
+.list-table td{padding:10px 12px;border-bottom:1px solid #EDF1F4;font-size:13px;vertical-align:middle}
+.list-table tr:hover td{background:#FAFBFD}
+.list-table .w-word{width:22%}
+.list-table .w-phon{width:26%}
+.list-table .w-mean{width:46%}
+.list-table .w-act{width:6%}
+.word-cell{font-weight:700;font-size:13.5px;color:var(--primary)}
+.phon-cell{color:var(--ink-2);font-size:12.5px}
+.toast{
+  position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;
+  opacity:0;pointer-events:none;transition:all .25s ease;z-index:999;max-width:80vw;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{background:var(--success)}
+.toast.err{background:var(--danger)}
+
+/* ============ 词库视图 ============ */
+.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.lib-card{padding:16px;display:flex;flex-direction:column;gap:10px;cursor:pointer;transition:border-color .15s,transform .15s;position:relative}
+.lib-card:hover{border-color:#B9C8D6;transform:translateY(-2px)}
+.lib-card .lib-top{display:flex;align-items:center;gap:10px}
+.lib-ico{width:38px;height:38px;border-radius:10px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lib-ico svg{width:19px;height:19px;color:var(--primary)}
+.lib-name{font-weight:700;font-size:14.5px;line-height:1.3}
+.lib-meta{font-size:11.5px;color:var(--ink-3)}
+.lib-progress{font-size:11.5px;color:var(--ink-2);display:flex;justify-content:space-between;margin-top:auto}
+.lib-del{position:absolute;top:10px;right:10px;color:var(--ink-3);padding:4px;border-radius:6px;opacity:0;transition:all .15s}
+.lib-card:hover .lib-del{opacity:1}
+.lib-del:hover{color:var(--danger);background:var(--danger-soft)}
+.import-panel{margin-top:16px;padding:22px}
+.import-step{display:none}
+.import-step.active{display:block}
+.drop-zone{
+  border:2px dashed #C6D2DD;border-radius:var(--radius);padding:40px 20px;text-align:center;
+  color:var(--ink-2);transition:all .2s;cursor:pointer;
+}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:var(--accent-soft)}
+.drop-zone svg{width:34px;height:34px;color:var(--accent);margin-bottom:10px}
+.drop-zone .big{font-size:15px;color:var(--ink);font-weight:600;margin-bottom:4px}
+.drop-zone .small{font-size:12px}
+.preview-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}
+.preview-scroll{max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:10px}
+.preview-stat{font-size:12.5px;color:var(--ink-2);margin-top:10px;display:flex;gap:16px;flex-wrap:wrap}
+
+/* ============ 背诵视图 ============ */
+.flash-wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.flash-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
+.ctrl-group{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:5px 10px;font-size:12.5px;color:var(--ink-2)}
+.ctrl-group select{border:none;background:none;outline:none;font-family:inherit;font-size:12.5px;color:var(--ink);cursor:pointer}
+.flash-card{
+  perspective:1200px;height:340px;cursor:pointer;position:relative;
+}
+.flash-inner{
+  position:relative;width:100%;height:100%;transform-style:preserve-3d;
+  transition:transform .45s cubic-bezier(.4,.1,.2,1);
+}
+.flash-card.flipped .flash-inner{transform:rotateY(180deg)}
+.flash-face{
+  position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  border-radius:18px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;
+}
+.flash-back{transform:rotateY(180deg)} /* 背面默认朝后，随卡片整体翻转呈现 */
+.flash-face .face-hint{position:absolute;top:14px;left:18px;font-size:11px;color:var(--ink-3);letter-spacing:1px}
+.flash-face .face-count{position:absolute;top:14px;right:18px;font-size:11px;color:var(--ink-3)}
+.flash-front .word{font-family:var(--font-serif);font-size:44px;font-weight:900;color:var(--ink);line-height:1.2;word-break:break-word}
+.flash-front .phon{font-size:17px;color:var(--accent);margin-top:10px}
+.flash-front .play{display:inline-flex;align-items:center;gap:6px;margin-top:14px;font-size:12.5px;color:var(--primary);background:var(--primary-soft);padding:6px 14px;border-radius:20px;transition:all .15s}
+.flash-front .play:hover{background:var(--primary);color:#fff}
+.flash-back .mean{font-size:19px;font-weight:600;line-height:1.7;color:var(--ink)}
+.flash-back .mean small{display:block;font-weight:400;font-size:13px;color:var(--ink-2);margin-top:8px}
+.recall-box{margin-top:18px;width:100%;max-width:380px}
+.recall-box .quiz-input{font-size:15px;font-weight:500;padding:10px 14px}
+.recall-compare{font-size:12.5px;color:var(--ink-2);margin-top:6px}
+.listen-box{display:flex;align-items:center;gap:12px;justify-content:center;margin:14px 0 6px;flex-wrap:wrap}
+.flash-actions{display:flex;gap:10px;justify-content:center}
+.flash-actions .btn{flex:1;max-width:170px;justify-content:center;padding:12px}
+.btn-again{background:var(--danger-soft);color:var(--danger)}
+.btn-again:hover{background:var(--danger);color:#fff}
+.btn-hard{background:var(--accent-soft);color:var(--accent)}
+.btn-hard:hover{background:var(--accent);color:#fff}
+.btn-good{background:var(--success-soft);color:var(--success)}
+.btn-good:hover{background:var(--success);color:#fff}
+.flash-progress{display:flex;align-items:center;gap:12px;font-size:12.5px;color:var(--ink-2)}
+.flash-progress .progress{flex:1}
+.flash-done{text-align:center;padding:40px 20px}
+.flash-done h3{font-family:var(--font-serif);font-size:26px;margin-bottom:6px}
+.flash-done .stat-line{display:flex;gap:12px;justify-content:center;margin:20px 0;flex-wrap:wrap}
+.stat-pill{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 20px;min-width:100px}
+.stat-pill b{display:block;font-size:22px;font-family:var(--font-serif)}
+.stat-pill span{font-size:11.5px;color:var(--ink-2)}
+
+/* ============ 练习视图 ============ */
+.practice-wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.mode-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.mode-card{padding:20px;text-align:left;cursor:pointer;transition:all .15s}
+.mode-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.mode-card.active{border-color:var(--accent);background:var(--accent-soft)}
+.mode-card .mode-ico{width:40px;height:40px;border-radius:10px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.mode-card .mode-ico svg{width:20px;height:20px;color:var(--accent)}
+.mode-card h4{font-size:14.5px;margin-bottom:3px}
+.mode-card p{font-size:12px;color:var(--ink-2)}
+.quiz-card{padding:26px}
+.quiz-q{font-size:15px;color:var(--ink-2);margin-bottom:14px}
+.quiz-q .q-label{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;background:var(--primary-soft);color:var(--primary);padding:3px 10px;border-radius:6px;margin-bottom:8px}
+.quiz-target{font-size:20px;font-weight:700;line-height:1.7;background:var(--bg);border-radius:12px;padding:16px 18px;margin-bottom:16px;color:var(--ink)}
+.quiz-target .phon{font-size:14px;color:var(--accent);font-weight:500;margin-left:8px}
+.quiz-input{
+  width:100%;font-size:19px;font-weight:700;letter-spacing:.5px;padding:12px 16px;border:2px solid var(--border);
+  border-radius:12px;outline:none;transition:border-color .15s;background:var(--surface);color:var(--ink);
+}
+.quiz-input:focus{border-color:var(--primary)}
+.quiz-input.wrong{border-color:var(--danger);background:var(--danger-soft)}
+.quiz-input.right{border-color:var(--success);background:var(--success-soft)}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.option{
+  border:2px solid var(--border);border-radius:12px;padding:12px 14px;font-size:13.5px;text-align:left;
+  background:var(--surface);transition:all .12s;color:var(--ink);line-height:1.5;
+}
+.option:hover:not(:disabled){border-color:var(--primary);background:var(--primary-soft)}
+.option.right{border-color:var(--success);background:var(--success-soft);font-weight:600}
+.option.wrong{border-color:var(--danger);background:var(--danger-soft)}
+.option:disabled{cursor:default;opacity:.75}
+.feedback{margin-top:14px;font-size:13.5px;display:flex;align-items:center;gap:8px;min-height:26px}
+.feedback .correct-ans{color:var(--success);font-weight:700}
+.quiz-foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+.quiz-progress{font-size:12.5px;color:var(--ink-2)}
+.quiz-score{font-size:12.5px;font-weight:700}
+
+/* ============ 错题视图 ============ */
+.wrong-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.wrong-count{font-size:13px}
+
+/* ============ 统计视图 ============ */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{padding:18px}
+.stat-card .s-num{font-family:var(--font-serif);font-size:30px;font-weight:900;line-height:1.2}
+.stat-card .s-label{font-size:12px;color:var(--ink-2);margin-top:4px}
+.stat-card .s-ico{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.stat-card .s-ico svg{width:18px;height:18px}
+.ring-row{display:flex;gap:26px;align-items:center;flex-wrap:wrap}
+.ring-wrap{position:relative;width:150px;height:150px;flex-shrink:0}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-center b{font-family:var(--font-serif);font-size:26px}
+.ring-center span{font-size:11px;color:var(--ink-2)}
+.ring-legend{display:flex;flex-direction:column;gap:8px;font-size:13px}
+.ring-legend .lg{display:flex;align-items:center;gap:8px}
+.ring-legend .dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.week-bars{display:flex;gap:8px;align-items:flex-end;height:120px;padding:10px 0}
+.week-bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.week-bar .bar{width:100%;max-width:34px;border-radius:6px 6px 0 0;background:linear-gradient(180deg,#4A7396,var(--primary));min-height:3px;transition:height .4s ease}
+.week-bar .bar.zero{background:var(--bg)}
+.week-bar span{font-size:10.5px;color:var(--ink-3)}
+
+/* ============ 弹窗 ============ */
+.modal-mask{
+  position:fixed;inset:0;background:rgba(15,27,45,.45);display:none;align-items:center;justify-content:center;
+  z-index:100;padding:20px;backdrop-filter:blur(2px);
+}
+.modal-mask.show{display:flex}
+.modal{background:var(--surface);border-radius:16px;width:100%;max-width:480px;max-height:86vh;overflow:auto;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.modal h3{font-family:var(--font-serif);font-size:18px;margin-bottom:16px}
+.modal .field{margin-bottom:14px}
+.modal .field label{display:block;font-size:12.5px;color:var(--ink-2);margin-bottom:6px;font-weight:600}
+.modal .field input[type=number]{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;outline:none}
+.modal .field input:focus{border-color:var(--primary)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.modal-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #EDF1F4}
+.modal-row:last-child{border-bottom:none}
+.modal-row .mr-title{font-size:13.5px;font-weight:600}
+.modal-row .mr-desc{font-size:11.5px;color:var(--ink-2)}
+.switch{position:relative;width:42px;height:24px;flex-shrink:0;cursor:pointer}
+.switch input{opacity:0;width:0;height:0}
+.switch .track{position:absolute;inset:0;background:#CBD5E0;border-radius:20px;transition:background .2s}
+.switch .track::after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.switch input:checked + .track{background:var(--primary)}
+.switch input:checked + .track::after{transform:translateX(18px)}
+
+/* ============ 单词总表 ============ */
+.ws-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.chip{padding:7px 14px;border-radius:20px;font-size:12.5px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2);cursor:pointer;transition:all .15s}
+.chip:hover{border-color:var(--ink-3)}
+.chip.active{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600}
+.chip b{font-weight:700}
+.ws-btn{font-size:11.5px;padding:4px 9px;border-radius:7px;border:1px solid var(--border);color:var(--ink-2);background:var(--surface);margin:1px 3px 1px 0;transition:all .12s}
+.ws-btn:hover{border-color:var(--ink-3);transform:translateY(-1px)}
+.ws-btn.on-g{background:var(--success);border-color:var(--success);color:#fff}
+.ws-btn.on-o{background:var(--accent);border-color:var(--accent);color:#fff}
+.ws-btn.on-r{background:var(--danger);border-color:var(--danger);color:#fff}
+.ws-pager{display:flex;align-items:center;gap:10px;justify-content:center;padding:14px 0;font-size:12.5px;color:var(--ink-2)}
+.ws-pager button{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-size:14px;display:flex;align-items:center;justify-content:center}
+.ws-pager button:disabled{opacity:.35;cursor:not-allowed}
+.ws-pager button:hover:not(:disabled){border-color:var(--primary);color:var(--primary)}
+
+/* ============ 词条编辑 ============ */
+.word-edit-modal .edit-row{margin-bottom:12px}
+.word-edit-modal label{display:block;font-size:12px;color:var(--ink-2);margin-bottom:5px;font-weight:600}
+.word-edit-modal input,.word-edit-modal textarea{
+  width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13.5px;outline:none;font-family:inherit;resize:vertical;
+}
+.word-edit-modal input:focus,.word-edit-modal textarea:focus{border-color:var(--primary)}
+
+/* ============ 响应式 ============ */
+@media (max-width:860px){
+  #app{flex-direction:column}
+  .sidebar{width:100%;height:auto;position:static;flex-direction:row;align-items:center;padding:10px 12px;gap:6px;flex-wrap:wrap}
+  .brand{padding:0 8px 0 2px}
+  .brand-sub{display:none}
+  .nav{flex-direction:row;gap:2px;flex:1;justify-content:flex-end}
+  .nav-item{padding:8px 10px;font-size:12px;gap:6px;min-width:44px;min-height:44px}
+  .nav-item .nv-label{display:none}
+  .sidebar-foot{display:none}
+  .topbar{padding:10px 14px;flex-wrap:wrap}
+  .content{padding:16px 14px 90px}
+  .lib-picker{max-width:none;flex:1}
+  .search-box{max-width:none;order:5;flex-basis:100%}
+  .search-box input,.quiz-input,#pv-search{font-size:16px}
+  .btn{padding:11px 16px;min-height:44px}
+  .options{grid-template-columns:1fr}
+  .mode-cards{grid-template-columns:1fr}
+  .list-table .w-phon{display:none}
+  .list-table .w-word{width:30%}
+  .list-table .w-mean{width:60%}
+  .flash-card{height:300px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- ===== 侧栏导航 ===== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#F7F3EA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">词汇工坊</div>
+        <div class="brand-sub">PDF词库学习助手</div>
+      </div>
+    </div>
+    <nav class="nav" id="nav">
+      <button class="nav-item active" data-view="library">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span class="nv-label">词库</span>
+      </button>
+      <button class="nav-item" data-view="flashcard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 10h18"/></svg>
+        <span class="nv-label">背诵</span>
+      </button>
+      <button class="nav-item" data-view="practice">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.8 2.8 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>
+        <span class="nv-label">练习</span>
+      </button>
+      <button class="nav-item" data-view="wrong">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+        <span class="nv-label">错题</span>
+      </button>
+      <button class="nav-item" data-view="notebook">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><path d="M9 11l3 3 6-6"/></svg>
+        <span class="nv-label">词本</span>
+      </button>
+      <button class="nav-item" data-view="wordsheet">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg>
+        <span class="nv-label">总表</span>
+      </button>
+      <button class="nav-item" data-view="stats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span class="nv-label">统计</span>
+      </button>
+    </nav>
+    <div class="sidebar-foot">
+      <button id="btn-settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.09a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.09a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg>
+        设置
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== 主区 ===== -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title" id="topbar-title">词库</div>
+      <div class="lib-picker">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <select id="lib-select"><option value="">暂无词库</option></select>
+      </div>
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+        <input id="global-search" placeholder="搜索单词…" autocomplete="off">
+      </div>
+    </header>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<div class="modal-mask" id="modal-mask">
+  <div class="modal" id="modal-box"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="assets/pdf.min.js"></script>
+<script src="assets/core.js"></script>
+<script>
+/* ============================================================
+ * 词汇工坊 Vocab Studio
+ * 本地运行 · 数据存于浏览器 localStorage · 支持导入PDF词表
+ * ============================================================ */
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const STORE_KEY = 'vocab-studio-v1';
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- 状态 ---------- */
+let state = load();
+function load(){
+  try{ const d = JSON.parse(localStorage.getItem(STORE_KEY)); if(d && d.libs) return d; }catch(e){}
+  return { libs:{}, activeId:null, settings:{ dailyGoal:50, tts:true, voice:'real', accent:2 }, dayLog:{}, wrongs:{} };
+}
+function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function getLib(id){ return state.libs[id] || null; }
+function activeLib(){ return getLib(state.activeId); }
+
+/* ---------- 发音（本地音频优先 → 系统合成兜底） ---------- */
+const AUDIO_CACHE = new Map(); // 会话内缓存已加载的发音
+function safeName(w){ return String(w||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'w'; }
+function saySys(text){
+  if(!('speechSynthesis' in window)) return;
+  try{
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = 0.85;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+function playReal(word){
+  const w=word.trim(); if(!w) return;
+  const cached=AUDIO_CACHE.get(w);
+  if(cached && cached.src){ cached.currentTime=0; cached.play().catch(()=>saySys(w)); return; }
+  // ① 本地音频：用户可把自备发音按「单词.mp3」命名放入 assets/audio/ 作为发音资源包
+  const src='assets/audio/'+safeName(w)+'.mp3';
+  const a=new Audio(src);
+  let done=false;
+  const ok=()=>{ if(done) return; done=true; AUDIO_CACHE.set(w,a); a.play().catch(()=>saySys(w)); };
+  const fail=()=>{ if(done) return; done=true; AUDIO_CACHE.delete(w); saySys(w); }; // 无本地音频 → 系统合成
+  a.addEventListener('canplaythrough', ok, {once:true});
+  a.addEventListener('error', fail, {once:true});
+  a.load();
+  setTimeout(()=>{ if(!done && a.readyState<3) fail(); }, 9000); // 超时兜底
+}
+function speak(text, force){
+  if(!force && !state.settings.tts) return;
+  if(state.settings.voice!=='sys' && typeof Audio!=='undefined'){ playReal(text); return; }
+  saySys(text);
+}
+
+/* ---------- Toast ---------- */
+let toastTimer=null;
+function toast(msg, type){
+  const t=$('#toast'); t.textContent=msg; t.className='toast show'+(type?' '+type:'');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.className='toast',2200);
+}
+
+/* ---------- PDF解析引擎 ---------- */
+function normWord(w){ return String(w||'').trim().toLowerCase().replace(/[^a-z ]/g,' ').replace(/\s+/g,' ').trim(); }
+function looksLikePageNo(l){ return /^\d+$/.test(l.trim()); }
+function isPhoneticLine(l){
+  return /^[\[/]/.test(l.trim()) && /[\]/]$/.test(l.trim()) && !/[\u4e00-\u9fa5]/.test(l);
+}
+function isMeaningLine(l){
+  if(!/[\u4e00-\u9fa5]/.test(l)) return false;
+  if(/^第\s*\d+\s*页/.test(l)) return false;      // 页码行
+  if(/(^|[\s;；])(n|v|vt|vi|a|adj|ad|adv|prep|conj|pron|num|int|art|aux|modal|det|abbr|pref|suf)\./i.test(l)) return true;
+  // 无词性标记但含中文且长度足够（如纯短语释义）
+  return l.length >= 5;
+}
+function isWordLine(l){
+  if(/[\u4e00-\u9fa5]/.test(l)) return false;
+  if(/[\[\]\/]/.test(l)) return /^[a-z]+[a-z' -]*\/[a-z' -]+$/i.test(l.trim()); // a/an
+  return /^[A-Za-z][A-Za-z' -]{0,45}$/.test(l.trim());
+}
+function parseVocabLines(rawLines){
+  const lines = rawLines.map(l=>l.trim()).filter(l=>l && !looksLikePageNo(l) && !/第\s*\d+\s*页/.test(l) && l.length<200);
+  const out=[]; const seen=new Set(); let skipped=0; let i=0;
+  // 词条格式： 排名 单词 音标 [权重/次数] 释义   （释义可跨行）
+  const RE_ENTRY = /^(\d{1,4})\s+([A-Za-z][A-Za-z' .\-]*?)\s+(\/[^\/\n]+\/)\s+\[(\d+(?:\.\d+)?)\/(\d+)\]\s*([\s\S]*)$/;
+  const RE_ENTRY_NP = /^(\d{1,4})\s+([A-Za-z][A-Za-z' .\-]*?)\s+\[(\d+(?:\.\d+)?)\/(\d+)\]\s*([\s\S]*)$/;
+  const isMeanCont = l => {
+    if(!/[\u4e00-\u9fa5]/.test(l)) return false;
+    if(/^第\s*\d+\s*页/.test(l)) return false;
+    if(/^\d{1,4}\s+[A-Za-z]/.test(l)) return false;
+    if(/排名|序号|部分|词条|语料|加权|释义|格式|词汇表|Vocabulary/.test(l)) return false;
+    if(/^[\d]+\s*[-–—]\s*[\d]*$/.test(l)) return false;
+    return l.length >= 4;
+  };
+  const pushWord=(word,phon,mean,freq)=>{
+    const key=normWord(word);
+    if(key && !seen.has(key)){ seen.add(key); out.push({ word, phonetic:phon, meaning:(mean||'').trim()||'(释义缺失)', freq:freq||0 }); }
+    else skipped++;
+  };
+  while(i<lines.length){
+    const L = lines[i];
+    const mE = L.match(RE_ENTRY);
+    if(mE){
+      let mean=mE[6]||''; i++;
+      while(i<lines.length && isMeanCont(lines[i])){ mean+=lines[i]; i++; }
+      pushWord(mE[2], mE[3], mean, +mE[5]); continue;
+    }
+    const mN = L.match(RE_ENTRY_NP);
+    if(mN){
+      let mean=mN[5]||''; i++;
+      while(i<lines.length && isMeanCont(lines[i])){ mean+=lines[i]; i++; }
+      pushWord(mN[2], '', mean, +mN[4]); continue;
+    }
+    if(isWordLine(L)){
+      let word=L, phon='', mean=''; i++;
+      if(i<lines.length && isPhoneticLine(lines[i])){ phon=lines[i]; i++; }
+      while(i<lines.length && isMeaningLine(lines[i])){ mean += (mean?'；':'') + lines[i]; i++; }
+      if(!mean){ // 释义缺失，回退检查下一行是否为释义
+        if(i<lines.length && isMeaningLine(lines[i])){ mean=lines[i]; i++; }
+      }
+      pushWord(word, phon, mean);
+    } else {
+      // 兜底：同行同时包含 单词 + 音标 + 释义，如 "abandon /ə'bændən/ vt.放弃"
+      const m = L.match(/^([A-Za-z][A-Za-z' -]*?)\s+(\/[^/]+\/)\s+([\u4e00-\u9fa5].+)$/);
+      if(m){ pushWord(m[1], m[2], m[3]); i++; }
+      else {
+        // 兜底2：同行包含 单词 + 释义（无音标），如 "abandon vt.放弃"
+        const m2 = L.match(/^([A-Za-z][A-Za-z' -]*?)\s+((?:n|v|vt|vi|a|adj|ad|adv|prep|conj|pron|num|int|art|aux|modal|det|abbr)\.\s*[\u4e00-\u9fa5].+)$/i);
+        if(m2){ pushWord(m2[1], '', m2[2]); i++; }
+        else i++;
+      }
+    }
+  }
+  return { words:out, skipped };
+}
+async function extractPdfText(file){
+  const ab = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data:ab }).promise;
+  const lines=[];
+  for(let p=1; p<=pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const tc = await page.getTextContent();
+    let lastY=null, line='';
+    for(const it of tc.items){
+      const y = it.transform[5];
+      if(lastY!==null && Math.abs(y-lastY)>3){ lines.push(line); line=''; }
+      line += it.str || '';
+      lastY=y;
+    }
+    if(line.trim()) lines.push(line);
+  }
+  return lines;
+}
+
+/* ============================================================
+ * 视图切换
+ * ============================================================ */
+const VIEW_TITLES = { library:'词库', flashcard:'背诵', practice:'练习', wrong:'错题', notebook:'词本', wordsheet:'单词总表', stats:'统计' };
+let currentView='library';
+function switchView(v){
+  currentView=v;
+  $$('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.view===v));
+  $('#topbar-title').textContent=VIEW_TITLES[v];
+  $('#content').innerHTML='';
+  const map={ library:renderLibrary, flashcard:renderFlashcard, practice:renderPractice, wrong:renderWrong, notebook:renderNotebook, wordsheet:renderWordsheet, stats:renderStats };
+  (map[v]||renderLibrary)();
+}
+$$('.nav-item').forEach(b=>b.addEventListener('click', ()=>switchView(b.dataset.view)));
+
+/* ============================================================
+ * 词库视图
+ * ============================================================ */
+function renderLibrary(){
+  const libs=Object.values(state.libs);
+  const active=activeLib();
+  let html=`
+  <div class="section-head">
+    <div><h2>我的词库</h2><div class="desc">导入 PDF 词汇表，或使用内置示例词库开始学习</div></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost" id="btn-demo-lib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新建示例词库</button>
+      <button class="btn btn-ghost" id="btn-json-import" title="导入词汇工坊词库文件(.json)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导入词库文件</button>
+      <button class="btn btn-accent" id="btn-import"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导入 PDF 词表</button>
+    </div>
+  </div>`;
+  if(libs.length===0){
+    html+=`<div class="card empty">
+      <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+      <h3>还没有词库</h3>
+      <p>把任何 PDF 词汇表导入进来，就能开始背诵和填空练习</p>
+      <button class="btn btn-accent" id="btn-import-2">导入第一份 PDF</button>
+    </div>`;
+  } else {
+    html+=`<div class="lib-grid">`+libs.map(l=>{
+      const n=l.words.length;
+      const st=progressOf(l);
+      const pct=Math.round(st.mastered/n*100);
+      const isAct=active&&active.id===l.id;
+      return `<div class="card lib-card ${isAct?'':''}" data-open="${l.id}">
+        <button class="lib-del" data-del="${l.id}" title="删除词库"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+        <div class="lib-top">
+          <div class="lib-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+          <div style="min-width:0"><div class="lib-name">${esc(l.name)}${isAct?' <span class="badge badge-blue">当前</span>':''}</div><div class="lib-meta">${l.source||'本地词库'} · ${n} 词</div></div>
+        </div>
+        <div class="progress"><i style="width:${pct}%"></i></div>
+        <div class="lib-progress"><span>已掌握 ${st.mastered}</span><span>${pct}%</span></div>
+      </div>`;
+    }).join('')+`</div>`;
+  }
+  $('#content').innerHTML=html;
+  const open=$$('.lib-card'); open.forEach(c=>c.addEventListener('click',e=>{
+    if(e.target.closest('.lib-del')) return;
+    setActiveLib(c.dataset.open); renderLibrary(); toast('已切换到词库：'+(activeLib()||{}).name);
+  }));
+  $$('.lib-del').forEach(b=>b.addEventListener('click',e=>{
+    e.stopPropagation();
+    if(!confirm('删除词库「'+ (getLib(b.dataset.del)||{}).name +'」？学习记录也会一并删除。')) return;
+    delete state.libs[b.dataset.del];
+    if(state.activeId===b.dataset.del) state.activeId=null;
+    save(); renderLibrary();
+  }));
+  $('#btn-demo-lib').addEventListener('click', addDemoLib);
+  const b1=$('#btn-import'), b2=$('#btn-import-2');
+  if(b1) b1.addEventListener('click', openImport);
+  if(b2) b2.addEventListener('click', openImport);
+  $('#btn-json-import').addEventListener('click', openJsonImport);
+}
+function openJsonImport(){
+  const fi=document.createElement('input'); fi.type='file'; fi.accept='.json,application/json';
+  fi.onchange=()=>{ const f=fi.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=()=>{ try{
+      const d=JSON.parse(r.result);
+      if(!d || !Array.isArray(d.words) || !d.words.length) throw new Error('格式不正确，需要 {"name":"...","words":[{word,phonetic,meaning},...]}');
+      const words=d.words.slice(0,30000).map(w=>({
+        id:uid(), word:String(w.word||'').trim(), phonetic:String(w.phonetic||''), meaning:String(w.meaning||'').trim()
+      })).filter(w=>w.word);
+      if(!words.length) throw new Error('没有有效的单词条目');
+      const lib={ id:uid(), name:String(d.name||f.name.replace(/\.json$/i,'')).slice(0,30), source:d.source||'词库文件', createdAt:Date.now(), prog:{}, words };
+      state.libs[lib.id]=lib; state.activeId=lib.id; save();
+      toast('导入成功：'+words.length+' 个单词');
+      renderLibrary(); refreshLibPicker();
+    }catch(err){ toast('导入失败：'+err.message,'err'); } };
+    r.readAsText(f);
+  };
+  fi.click();
+}
+
+/* ---------- 学习状态（含间隔重复复习调度 SRS） ---------- */
+const SRS_INTERVALS=[1,2,4,7,15]; // 复习间隔天数：认识→1/2/4/7/15天递进
+function ensureProgress(lib){
+  if(!lib.prog){ lib.prog={}; }
+  if(!state.wrongs[lib.id]) state.wrongs[lib.id]={};
+  return lib.prog;
+}
+function progressOf(lib){
+  ensureProgress(lib);
+  let newC=0, fuzzy=0, unknown=0, mastered=0;
+  lib.words.forEach(w=>{
+    const s=lib.prog[w.id];
+    if(!s || s.status==='new') newC++;
+    else if(s.status==='mastered') mastered++;
+    else if(s.status==='unknown') unknown++;
+    else fuzzy++; // fuzzy / learning(旧数据)
+  });
+  return { total:lib.words.length, new:newC, fuzzy, unknown, mastered, learning:fuzzy+unknown };
+}
+function statusWord(lib, wid, status){
+  ensureProgress(lib);
+  const s=lib.prog[wid]=lib.prog[wid]||{status:'new',wrongs:0,seen:0};
+  s.status=status; s.seen=(s.seen||0)+1;
+  const now=Date.now(), DAY=86400000;
+  if(status==='mastered'){
+    s.masteredAt=now;
+    s.srsStep=Math.min((s.srsStep||0)+1, SRS_INTERVALS.length);
+    s.reviewAt=now + SRS_INTERVALS[s.srsStep-1]*DAY; // 按间隔递进排期
+    delete state.wrongs[lib.id][wid];
+  } else if(status==='fuzzy'){
+    s.srsStep=Math.max(1,(s.srsStep||2)-1);
+    s.reviewAt=now + SRS_INTERVALS[0]*DAY; // 1 天后回来看
+  } else if(status==='unknown'){
+    s.srsStep=0;
+    s.reviewAt=now; // 立即进入复习队列
+  }
+  save();
+}
+function addToWrong(lib, wid){
+  ensureProgress(lib);
+  const s=lib.prog[wid]=lib.prog[wid]||{status:'new',wrongs:0,seen:0};
+  s.wrongs=(s.wrongs||0)+1;
+  state.wrongs[lib.id][wid]=(state.wrongs[lib.id][wid]||0)+1;
+  if(s.status!=='mastered'){ s.status='learning'; s.reviewAt=Date.now(); }
+  save();
+}
+function wrongCount(lib){ return Object.keys(state.wrongs[lib.id]||{}).length; }
+function isWrong(lib, wid){ return !!(state.wrongs[lib.id]||{})[wid]; }
+function dueWords(lib){
+  const now=Date.now();
+  return lib.words.filter(w=>{ const p=lib.prog[w.id]; return p && p.reviewAt && p.reviewAt<=now; });
+}
+function backfillSrs(lib){
+  const now=Date.now(), DAY=86400000;
+  lib.words.forEach(w=>{
+    const p=lib.prog[w.id]; if(!p||!p.status||p.reviewAt) return;
+    if(p.status==='mastered'){ p.srsStep=2; p.reviewAt=now; }               // 老已掌握词：今日复习一次
+    else if(p.status==='fuzzy'||p.status==='learning'){ p.srsStep=1; p.reviewAt=now+DAY; }
+    else if(p.status==='unknown'){ p.srsStep=0; p.reviewAt=now; }
+  });
+}
+function exportWords(words, filename){
+  if(!words.length){ toast('没有可导出的单词','err'); return; }
+  const rows=['单词,音标,释义,出现次数,掌握程度'];
+  const stName={mastered:'已掌握',fuzzy:'模糊',learning:'模糊',unknown:'不认识'};
+  words.forEach(w=>{
+    const p=activeLib().prog[w.id];
+    rows.push([w.word, (w.phonetic||'').replace(/,/g,' '), (w.meaning||'').replace(/,/g,'，'), w.freq||'', p? (stName[p.status]||'未选择') : '未选择'].join(','));
+  });
+  const blob=new Blob(['\ufeff'+rows.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+  URL.revokeObjectURL(a.href); toast('已导出 '+words.length+' 词');
+}
+
+/* ---------- 词库选择 ---------- */
+function refreshLibPicker(){
+  const sel=$('#lib-select');
+  const libs=Object.values(state.libs);
+  sel.innerHTML='<option value="">'+(libs.length?'选择词库':'暂无词库')+'</option>'+libs.map(l=>`<option value="${l.id}" ${l.id===state.activeId?'selected':''}>${esc(l.name)}</option>`).join('');
+}
+function setActiveLib(id){ state.activeId=id; save(); refreshLibPicker(); }
+$('#lib-select').addEventListener('change', e=>{
+  const v=e.target.value; setActiveLib(v||null);
+  if(currentView==='library') renderLibrary();
+  toast(v?'已切换到词库「'+(getLib(v)||{}).name+'」':'已取消选择');
+});
+
+/* ============================================================
+ * 导入 PDF
+ * ============================================================ */
+function openImport(){
+  $('#content').innerHTML=`
+  <div class="section-head"><div><h2>导入 PDF 词表</h2><div class="desc">支持「单词 / 音标 / 释义」分行或同行的常见词汇表格式，导入后可预览修正</div></div>
+    <button class="btn btn-ghost" id="btn-back-lib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>返回词库</button></div>
+  <div class="card import-panel">
+    <div class="import-step active" id="step-1">
+      <div class="drop-zone" id="drop-zone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
+        <div class="big">点击选择或拖入 PDF 文件</div>
+        <div class="small">文件仅在本机浏览器中解析，不会上传</div>
+      </div>
+      <input type="file" id="pdf-file" accept="application/pdf,.pdf" style="display:none">
+      <div class="preview-stat" style="margin-top:14px;color:var(--ink-3)">
+        <span>提示：可先试试「内置示例词库」感受学习流程，再导入自己的 PDF 词库。</span>
+      </div>
+    </div>
+    <div class="import-step" id="step-2">
+      <div style="text-align:center;padding:30px"><div style="font-size:15px;font-weight:600;margin-bottom:6px">正在解析 PDF…</div><div class="muted" style="font-size:12.5px" id="parse-msg">提取文字中</div></div>
+    </div>
+    <div class="import-step" id="step-3">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <input id="new-lib-name" class="quiz-input" style="flex:1;min-width:200px;font-size:14px;font-weight:600" placeholder="词库名称，如：我的核心词汇">
+      </div>
+      <div class="preview-toolbar">
+        <button class="btn btn-ghost" id="pv-all"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>全选</button>
+        <button class="btn btn-ghost" id="pv-none">全不选</button>
+        <button class="btn btn-ghost" id="pv-invert">反选</button>
+        <span style="width:1px;height:22px;background:var(--border)"></span>
+        <button class="btn btn-ghost" id="pv-dropzero" title="去掉从未出现过的词"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>剔除未出现词</button>
+        <button class="btn btn-ghost" id="pv-keephigh" title="只保留出现≥3次的词"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v12"/><path d="M18 9a6 6 0 0 1-6 6v0a6 6 0 0 1-6-6"/><path d="M6 3h12"/><path d="M6 21h12"/></svg>仅高频词(≥3次)</button>
+        <span class="muted" id="pv-filter-tip"></span>
+        <input id="pv-search" class="quiz-input" style="flex:1;min-width:150px;font-size:12.5px;font-weight:400;padding:7px 12px" placeholder="在解析结果中筛选…">
+      </div>
+      <div class="preview-scroll" id="pv-list"></div>
+      <div class="preview-stat" id="pv-stat"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">
+        <button class="btn btn-ghost" id="pv-back">重新选择</button>
+        <button class="btn btn-accent" id="pv-confirm">确认导入</button>
+      </div>
+    </div>
+  </div>`;
+  $('#btn-back-lib').addEventListener('click', renderLibrary);
+  const dz=$('#drop-zone'), fi=$('#pdf-file');
+  dz.addEventListener('click', ()=>fi.click());
+  dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', ()=>dz.classList.remove('drag'));
+  dz.addEventListener('drop', e=>{ e.preventDefault(); dz.classList.remove('drag'); if(e.dataTransfer.files[0]) handlePdf(e.dataTransfer.files[0]); });
+  fi.addEventListener('change', e=>{ if(e.target.files[0]) handlePdf(e.target.files[0]); });
+}
+let pvData=[]; // {word,phonetic,meaning,keep}
+function handlePdf(file){
+  $('#step-1').classList.remove('active'); $('#step-2').classList.add('active');
+  $('#parse-msg').textContent='正在读取「'+file.name+'」…';
+  extractPdfText(file).then(lines=>{
+    $('#parse-msg').textContent='正在识别单词条目（共 '+lines.length+' 行文本）…';
+    return new Promise(r=>setTimeout(()=>r(parseVocabLines(lines)),30));
+  }).then(res=>{
+    pvData=res.words.map(w=>({...w, keep:true}));
+    $('#step-2').classList.remove('active'); $('#step-3').classList.add('active');
+    $('#new-lib-name').value=file.name.replace(/\.pdf$/i,'').replace(/[【】\[\]（）()]/g,'').slice(0,30)||'我的词库';
+    renderPreview();
+  }).catch(err=>{
+    toast('PDF 解析失败：'+(err&&err.message||err), 'err');
+    $('#step-2').classList.remove('active'); $('#step-1').classList.add('active');
+  });
+}
+function renderPreview(){
+  const q=($('#pv-search').value||'').trim().toLowerCase();
+  const hasFreq=pvData.some(w=>w.freq!==undefined);
+  const rows=pvData.map((w,i)=>`<tr>
+    <td class="w-check" style="width:34px"><input type="checkbox" data-i="${i}" ${w.keep?'checked':''}></td>
+    <td class="w-word word-cell">${esc(w.word)}</td>
+    <td class="w-phon phon-cell">${esc(w.phonetic)}</td>
+    <td class="w-mean">${esc(w.meaning)}</td>
+    ${hasFreq?`<td class="w-freq" style="text-align:center">${w.freq>0?`<span class="badge ${w.freq>=3?'badge-green':w.freq>=1?'badge-blue':'badge-red'}">${w.freq}</span>`:'<span class="badge badge-red">0</span>'}</td>`:''}
+  </tr>`);
+  const filtered=q ? pvData.map((w,i)=>({w,i})).filter(x=>(x.w.word+x.w.meaning+x.w.phonetic).toLowerCase().includes(q)) : pvData.map((w,i)=>({w,i}));
+  $('#pv-list').innerHTML=`<table class="list-table"><colgroup><col style="width:34px"><col style="width:20%"><col style="width:23%"><col style="width:43%">${hasFreq?'<col style="width:9%">':''}</colgroup>
+    <thead><tr><th style="width:34px"></th><th>单词</th><th>音标</th><th>释义</th>${hasFreq?'<th style="text-align:center">出现次数</th>':''}</tr></thead>
+    <tbody>${filtered.slice(0,300).map(x=>rows[x.i]).join('')}</tbody></table>
+    ${filtered.length>300?`<div style="padding:12px;text-align:center;color:var(--ink-3);font-size:12px">已显示前 300 条，共 ${filtered.length} 条匹配</div>`:''}`;
+  const kept=pvData.filter(w=>w.keep).length;
+  const zero=pvData.filter(w=>w.freq===0).length;
+  let stat=`<span>识别成功 <b style="color:var(--primary)">${pvData.length}</b> 条</span><span>已选 <b style="color:var(--accent)">${kept}</b> 条</span><span class="muted">无释义或重复行已自动跳过</span>`;
+  if(hasFreq) stat+=`<span>${zero?`<span style="color:var(--danger)">从未出现 ${zero} 条</span>`:'全部为已出现词'}</span>`;
+  $('#pv-stat').innerHTML=stat;
+  $$('#pv-list input[type=checkbox]').forEach(cb=>cb.addEventListener('change',()=>{
+    pvData[+cb.dataset.i].keep=cb.checked; renderPreview();
+  }));
+  $('#pv-search').oninput=renderPreview;
+  $('#pv-all').onclick=()=>{ pvData.forEach(w=>w.keep=true); renderPreview(); };
+  $('#pv-none').onclick=()=>{ pvData.forEach(w=>w.keep=false); renderPreview(); };
+  $('#pv-invert').onclick=()=>{ pvData.forEach(w=>w.keep=!w.keep); renderPreview(); };
+  const bDrop=$('#pv-dropzero'), bKeep=$('#pv-keephigh');
+  if(bDrop){ bDrop.onclick=()=>{
+    const n=pvData.filter(w=>w.freq===0).length;
+    if(!n){ toast('没有从未出现过的词','err'); return; }
+    pvData.forEach(w=>{ if(w.freq===0) w.keep=false; });
+    renderPreview(); toast('已剔除 '+n+' 个未出现词');
+  }; }
+  if(bKeep){ bKeep.onclick=()=>{
+    const n=pvData.filter(w=>w.freq<3).length;
+    pvData.forEach(w=>{ if(w.freq<3) w.keep=false; });
+    renderPreview(); toast('已仅保留高频词，剔除 '+n+' 个低频词');
+  }; }
+  $('#pv-back').onclick=openImport;
+  $('#pv-confirm').onclick=confirmImport;
+}
+function confirmImport(){
+  const name=($('#new-lib-name').value||'').trim()||'未命名词库';
+  const kept=pvData.filter(w=>w.keep);
+  if(!kept.length){ toast('请至少保留一个单词','err'); return; }
+  const lib={ id:uid(), name, source:'PDF导入', createdAt:Date.now(), prog:{},
+    words:kept.map(w=>({ id:uid(), word:w.word, phonetic:w.phonetic, meaning:w.meaning })) };
+  state.libs[lib.id]=lib; state.activeId=lib.id; save();
+  toast('导入成功：'+kept.length+' 个单词');
+  renderLibrary(); refreshLibPicker();
+}
+
+/* ---------- 示例词库 ---------- */
+function addDemoLib(){
+  const demo=[['abandon','/əˈbændən/','vt. 离弃，丢弃；遗弃，抛弃；放弃'],['ability','/əˈbɪləti/','n. 能力；本领；才能'],['absorb','/əbˈzɔːb/','vt. 吸收；使全神贯注'],['abstract','/ˈæbstrækt/','a. 抽象的 n. 摘要 vt. 提取'],['academic','/ˌækəˈdemɪk/','a. 学术的；学院的 n. 大学教师'],['access','/ˈækses/','n. 通道；机会 vt. 存取，访问'],['accompany','/əˈkʌmpəni/','vt. 陪伴；伴随；为…伴奏'],['accomplish','/əˈkʌmplɪʃ/','vt. 完成，实现'],['accurate','/ˈækjərət/','a. 准确的，精确的'],['acknowledge','/əkˈnɒlɪdʒ/','vt. 承认；致谢；确认收到'],['acquire','/əˈkwaɪə/','vt. 获得；学到；养成'],['adapt','/əˈdæpt/','v. 使适应；改编'],['adequate','/ˈædɪkwət/','a. 充足的；胜任的'],['adjust','/əˈdʒʌst/','vt. 调整，调节；适应'],['administration','/ədˌmɪnɪˈstreɪʃn/','n. 管理；行政部门'],['advocate','/ˈædvəkeɪt/','n. 拥护者 vt. 提倡，拥护'],['aesthetic','/iːsˈθetɪk/','a. 美学的；审美的'],['affect','/əˈfekt/','vt. 影响；感动；侵袭'],['aggressive','/əˈɡresɪv/','a. 侵略的；好斗的；进取的'],['alternative','/ɔːlˈtɜːnətɪv/','n. 替代方案 a. 可替代的'],['ambiguous','/æmˈbɪɡjuəs/','a. 模糊不清的；引起歧义的'],['ambition','/æmˈbɪʃn/','n. 雄心，抱负；野心'],['analyze','/ˈænəlaɪz/','vt. 分析，分解'],['ancient','/ˈeɪnʃənt/','a. 古代的；古老的'],['annual','/ˈænjuəl/','a. 每年的 n. 年刊'],['anticipate','/ænˈtɪsɪpeɪt/','vt. 预期，预料；先于…行动'],['apparent','/əˈpærənt/','a. 显然的；表面上的'],['appeal','/əˈpiːl/','vi. 呼吁；上诉；有吸引力 n. 呼吁'],['approach','/əˈprəʊtʃ/','v. 接近，靠近 n. 方法，途径'],['appropriate','/əˈprəʊpriət/','a. 适当的，恰当的'],['approve','/əˈpruːv/','v. 赞成，同意；批准'],['arbitrary','/ˈɑːbɪtrəri/','a. 任意的；专断的'],['assess','/əˈses/','vt. 评估，评定'],['assume','/əˈsjuːm/','vt. 假定；承担；呈现'],['attribute','/əˈtrɪbjuːt/','n. 属性 vt. 把…归因于'],['available','/əˈveɪləbl/','a. 可用的；可获得的'],['barrier','/ˈbæriə/','n. 障碍；屏障'],['benefit','/ˈbenɪfɪt/','n. 利益，好处 v. 有益于'],['bias','/ˈbaɪəs/','n. 偏见，成见 vt. 使有偏见'],['boost','/buːst/','vt. 促进，推动；增强 n. 提升'],['capable','/ˈkeɪpəbl/','a. 有能力的，能干的'],['capacity','/kəˈpæsəti/','n. 容量；能力；职位'],['challenge','/ˈtʃælɪndʒ/','n. 挑战 vt. 向…挑战'],['circumstance','/ˈsɜːkəmstəns/','n. 环境，情况；[pl.]境遇'],['claim','/kleɪm/','vt. 声称；索取 n. 主张；索赔'],['collapse','/kəˈlæps/','vi. 倒塌；崩溃 n. 坍塌；衰竭'],['commit','/kəˈmɪt/','vt. 犯（罪）；承诺；投入'],['community','/kəˈmjuːnəti/','n. 社区；社会；团体'],['compensate','/ˈkɒmpenseɪt/','v. 补偿，赔偿'],['complex','/ˈkɒmpleks/','a. 复杂的 n. 综合体'],['comprehensive','/ˌkɒmprɪˈhensɪv/','a. 全面的，综合的']];
+  let lib=state.libs['demo'];
+  if(!lib){
+    lib={ id:'demo', name:'示例词库', source:'内置示例', createdAt:Date.now(), prog:{},
+      words:demo.map(w=>({id:uid(),word:w[0],phonetic:w[1],meaning:w[2]})) };
+    state.libs[lib.id]=lib;
+  }
+  state.activeId=lib.id; save();
+  toast('已创建示例词库：'+lib.words.length+' 个单词');
+  renderLibrary(); refreshLibPicker();
+}
+
+/* ============================================================
+ * 背诵（闪卡）
+ * ============================================================ */
+let fcQueue=[], fcIdx=0, fcStats={again:0,hard:0,good:0}, fcScope='all', fcOrder='shuffle';
+function renderFlashcard(){
+  const lib=activeLib();
+  if(!lib){ renderNoLib('背诵'); return; }
+  fcQueue=buildQueue(lib, fcScope, fcOrder); fcIdx=0;
+  fcStats={again:0,hard:0,good:0};
+  const dueN=dueWords(lib).length;
+  $('#content').innerHTML=`
+  <div class="flash-wrap">
+    <div class="section-head"><div><h2>闪卡背诵</h2><div class="desc">正面回忆释义 → 翻面 → 按熟悉程度归类，到期的词会回来复习</div></div></div>
+    ${dueN?`
+    <div class="due-banner card" style="padding:12px 16px;margin-bottom:14px;border:1.5px solid var(--accent);background:linear-gradient(90deg,var(--accent-soft),var(--surface))">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:700;color:var(--accent)">今日待复习</span>
+        <span style="font-size:13px;color:var(--ink)">有 <b style="color:var(--accent);font-size:16px">${dueN}</b> 个单词到了复习时间（1/2/4/7/15 天间隔），趁还没忘先过一遍</span>
+        <button class="btn btn-accent" id="fc-due" style="margin-left:auto;padding:7px 16px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>开始复习</button>
+      </div>
+    </div>`:''}
+    <div class="flash-toolbar">
+      <div class="ctrl-group"><span>范围</span><select id="fc-scope">
+        <option value="due" ${fcScope==='due'?'selected':''}>今日复习（${dueN}）</option>
+        <option value="top800" ${fcScope==='top800'?'selected':''}>高频 Top800</option>
+        <option value="top1500" ${fcScope==='top1500'?'selected':''}>高频 Top1500</option>
+        <option value="all" ${fcScope==='all'?'selected':''}>全部单词</option>
+        <option value="new" ${fcScope==='new'?'selected':''}>未掌握</option>
+        <option value="unknown" ${fcScope==='unknown'?'selected':''}>不认识本</option>
+        <option value="fuzzy" ${fcScope==='fuzzy'?'selected':''}>模糊本</option>
+        <option value="mastered" ${fcScope==='mastered'?'selected':''}>已掌握本</option>
+        <option value="wrong" ${fcScope==='wrong'?'selected':''}>错题本</option>
+      </select></div>
+      <div class="ctrl-group"><span>顺序</span><select id="fc-order">
+        <option value="shuffle" ${fcOrder==='shuffle'?'selected':''}>随机</option>
+        <option value="seq" ${fcOrder==='seq'?'selected':''}>顺序</option>
+      </select></div>
+      <button class="btn btn-ghost" id="fc-restart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>重开一轮</button>
+    </div>
+    <div id="fc-area"></div>
+  </div>`;
+  $('#fc-scope').addEventListener('change',e=>{ fcScope=e.target.value; renderFlashcard(); });
+  $('#fc-order').addEventListener('change',e=>{ fcOrder=e.target.value; renderFlashcard(); });
+  $('#fc-restart').addEventListener('click', renderFlashcard);
+  const dueBtn=$('#fc-due');
+  if(dueBtn) dueBtn.addEventListener('click',()=>{ fcScope='due'; renderFlashcard(); });
+  if(fcQueue.length===0) renderFcEmpty();
+  else renderFcCard();
+}
+function buildQueue(lib, scope, order){
+  let arr=[];
+  const st=w=>lib.prog[w.id]&&lib.prog[w.id].status;
+  if(scope==='wrong') arr=lib.words.filter(w=>isWrong(lib,w.id));
+  else if(scope==='due') arr=dueWords(lib).sort((a,b)=>(lib.prog[a.id].reviewAt||0)-(lib.prog[b.id].reviewAt||0));
+  else if(scope==='new') arr=lib.words.filter(w=>st(w)!=='mastered');
+  else if(scope==='mastered') arr=lib.words.filter(w=>st(w)==='mastered');
+  else if(scope==='fuzzy') arr=lib.words.filter(w=>st(w)==='fuzzy'||st(w)==='learning');
+  else if(scope==='unknown') arr=lib.words.filter(w=>st(w)==='unknown');
+  else if(scope==='top800'||scope==='top1500'){
+    const n=scope==='top800'?800:1500;
+    arr=[...lib.words].sort((a,b)=>(b.freq||0)-(a.freq||0)).slice(0,n);
+  }
+  else arr=[...lib.words];
+  if(order==='shuffle') for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}
+  return arr;
+}
+function renderFcEmpty(){
+  const hints={
+    wrong:'错题本是空的，去练习几道题就会自动收录',
+    due:'今天没有到期的复习词。去背诵或练习标记一些词，它们会按 1/2/4/7/15 天自动回来复习',
+    top800:'这个词库不到 800 个单词，已全部包含',
+    top1500:'这个词库不到 1500 个单词，已全部包含',
+    unknown:'「不认识本」还没有单词，去背诵模式给单词归类后就会出现',
+    fuzzy:'「模糊本」还没有单词，背诵时标为「模糊」就会收进来',
+    mastered:'「已掌握本」还没有单词，背诵时标为「认识」就会收进来',
+    new:'所有单词都掌握了，太强了'
+  };
+  $('#fc-area').innerHTML=`<div class="card empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></svg></div>
+    <h3>这一轮没有可背的单词</h3><p>${hints[fcScope]||'试试其他范围，或回到词库导入更多单词'}</p>
+    <button class="btn btn-ghost" id="fc-goto-practice">去练习</button></div>`;
+  $('#fc-goto-practice').addEventListener('click', ()=>switchView('practice'));
+}
+function renderFcCard(){
+  const lib=activeLib(); if(!lib) return;
+  const w=fcQueue[fcIdx];
+  const done=fcIdx, total=fcQueue.length;
+  $('#fc-area').innerHTML=`
+  <div class="flash-card" id="fc-card">
+    <div class="flash-inner">
+      <div class="flash-face flash-front">
+        <div class="face-hint">回想中文释义</div>
+        <div class="face-count">${done+1} / ${total}</div>
+        <div class="word">${esc(w.word)}</div>
+        <div class="phon">${esc(w.phonetic||'')}</div>
+        <button class="play" id="fc-sound"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>朗读</button>
+        <div class="recall-box" id="recall-box">
+          <input class="quiz-input" id="fc-recall" placeholder="输入你回想的中文释义…" autocomplete="off" style="font-size:15px;font-weight:500;padding:10px 14px">
+        </div>
+        <button class="btn btn-primary" id="fc-reveal" style="margin-top:14px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>显示释义对比</button>
+      </div>
+      <div class="flash-face flash-back">
+        <div class="face-hint">释义 · 对比你的回答</div>
+        <div class="face-count">${done+1} / ${total}</div>
+        <div class="mean">${esc(w.meaning)}<small>${esc(w.phonetic||'')}</small></div>
+        <div class="recall-compare" id="fc-compare" style="font-size:12.5px;color:var(--ink-2);margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+  <div class="flash-progress"><span>${done+1}</span><div class="progress"><i style="width:${(done+1)/total*100}%"></i></div><span>${total}</span></div>
+  <div class="flash-actions">
+    <button class="btn btn-again" id="fc-again" disabled>不认识</button>
+    <button class="btn btn-hard" id="fc-hard" disabled>模糊</button>
+    <button class="btn btn-good" id="fc-good" disabled>认识</button>
+  </div>`;
+  const card=$('#fc-card'), input=$('#fc-recall');
+  const enableBtns=()=>{ $('#fc-again').disabled=false; $('#fc-hard').disabled=false; $('#fc-good').disabled=false; };
+  let lastFlip=0;
+  $('#fc-sound').addEventListener('click', e=>{
+    e.stopPropagation();
+    if(state.settings.voice==='sys' && !('speechSynthesis' in window)){ toast('当前浏览器不支持朗读','err'); return; }
+    speak(w.word, true);
+  });
+  $('#fc-reveal').addEventListener('click', e=>{
+    e.stopPropagation();
+    const ans=input.value.trim();
+    if(ans){ $('#fc-compare').innerHTML='你的回答：<b style="color:var(--accent)">'+esc(ans)+'</b>'; }
+    else { $('#fc-compare').innerHTML='你没有输入回答，直接看释义吧'; }
+    card.classList.add('flipped'); enableBtns();
+  });
+  card.addEventListener('click', e=>{
+    if(e.target.closest('#fc-sound')||e.target.closest('#fc-reveal')||e.target.closest('#fc-recall')) return;
+    const now=Date.now();
+    if(now-lastFlip<300) return; // 防双击：动画期间忽略重复点击，避免翻过去又立刻翻回来
+    lastFlip=now;
+    // 点击卡片来回翻转：翻过去再点就翻回正面
+    if(card.classList.contains('flipped')){
+      card.classList.remove('flipped');
+    } else {
+      const ans=input.value.trim();
+      if(ans){ $('#fc-compare').innerHTML='你的回答：<b style="color:var(--accent)">'+esc(ans)+'</b>'; }
+      card.classList.add('flipped'); enableBtns();
+    }
+  });
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter'){ $('#fc-reveal').click(); } });
+  const next=()=>{
+    if(fcIdx+1>=fcQueue.length){ renderFcDone(); }
+    else { fcIdx++; renderFcCard(); }
+  };
+  $('#fc-again').addEventListener('click', ()=>{ fcStats.again++; statusWord(lib,w.id,'unknown'); addToWrong(lib,w.id); next(); });
+  $('#fc-hard').addEventListener('click', ()=>{ fcStats.hard++; statusWord(lib,w.id,'fuzzy'); next(); });
+  $('#fc-good').addEventListener('click', ()=>{ fcStats.good++; statusWord(lib,w.id,'mastered'); next(); });
+  // 每个新单词出现时强制自动朗读一遍，之后想再听就手动点「朗读」
+  speak(w.word, true);
+}
+function renderFcDone(){
+  const total=fcQueue.length, mastered=fcStats.good;
+  const pct=total?Math.round(mastered/total*100):0;
+  const lib=activeLib();
+  $('#fc-area').innerHTML=`
+  <div class="card flash-done">
+    <h3>本轮完成</h3>
+    <div class="muted" style="font-size:13px">范围：${fcScope==='wrong'?'错题本':fcScope==='new'?'未掌握':fcScope==='mastered'?'已掌握本':fcScope==='fuzzy'?'模糊本':fcScope==='unknown'?'不认识本':'全部单词'} · 共 ${total} 词</div>
+    <div class="stat-line">
+      <div class="stat-pill"><b style="color:var(--success)">${fcStats.good}</b><span>认识</span></div>
+      <div class="stat-pill"><b style="color:var(--accent)">${fcStats.hard}</b><span>模糊</span></div>
+      <div class="stat-pill"><b style="color:var(--danger)">${fcStats.again}</b><span>不认识</span></div>
+      <div class="stat-pill"><b>${pct}%</b><span>掌握率</span></div>
+    </div>
+    <div class="progress" style="max-width:360px;margin:0 auto"><i style="width:${pct}%"></i></div>
+    <div style="margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-primary" id="fc-again-round"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>再背一轮</button>
+      <button class="btn btn-ghost" id="fc-to-wrong">查看错题</button>
+    </div>
+  </div>`;
+  $('#fc-again-round').addEventListener('click', renderFlashcard);
+  $('#fc-to-wrong').addEventListener('click', ()=>switchView('wrong'));
+  if(lib) logDay(lib, {flash:total});
+}
+
+/* ============================================================
+ * 练习（填空）
+ * ============================================================ */
+let pq=[], pIdx=0, pMode='type', pScore={right:0,wrong:0}, pScope='all';
+let testMode=false, testStart=0, testWrongs=[], rcStat={good:0,hard:0,again:0};
+function renderPractice(){
+  const lib=activeLib();
+  if(!lib){ renderNoLib('练习'); return; }
+  pq=buildQueue(lib, pScope, 'shuffle'); pIdx=0; pScore={right:0,wrong:0}; rcStat={good:0,hard:0,again:0};
+  $('#content').innerHTML=`
+  <div class="practice-wrap">
+    <div class="section-head"><div><h2>填空练习</h2><div class="desc">两种模式交替使用，答错的单词自动进入错题本</div></div>
+      <button class="btn btn-accent" id="btn-fulltest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>全套测试</button>
+    </div>
+    <div class="mode-cards">
+      <div class="card mode-card ${pMode==='listen'?'active':''}" data-mode="listen">
+        <div class="mode-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></div>
+        <h4>听音拼写</h4><p>朗读英文单词，听音拼出正确的写法（自动判分）</p>
+      </div>
+      <div class="card mode-card ${pMode==='recall'?'active':''}" data-mode="recall">
+        <div class="mode-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <h4>看英填中</h4><p>给英文单词，回想中文，显示释义后自评归类</p>
+      </div>
+      <div class="card mode-card ${pMode==='type'?'active':''}" data-mode="type">
+        <div class="mode-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></div>
+        <h4>看中填英</h4><p>给出中文释义，输入对应的英文单词（自动判分）</p>
+      </div>
+      <div class="card mode-card ${pMode==='choice'?'active':''}" data-mode="choice">
+        <div class="mode-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <h4>看词选义</h4><p>给出单词和音标，从四个释义中选出正确的一项</p>
+      </div>
+    </div>
+    <div id="pq-area"></div>
+  </div>`;
+  $$('.mode-card').forEach(c=>c.addEventListener('click',()=>{ pMode=c.dataset.mode; renderPractice(); }));
+  $('#btn-fulltest').addEventListener('click', openTestModal);
+  if(pq.length===0) renderPqEmpty();
+  else renderPqCard();
+}
+function openTestModal(){
+  const box=$('#modal-box');
+  box.innerHTML=`
+  <h3>全套测试</h3>
+  <p class="muted" style="font-size:12.5px;margin-bottom:16px">把选定范围内的单词完整测验一遍，统计正确率并生成错词报告。答错的词会自动加入错题本。</p>
+  <div class="field"><label>测试范围</label>
+    <select id="test-scope" class="quiz-input" style="font-size:14px;font-weight:400;padding:9px 12px">
+      <option value="all">全部单词（${activeLib()?activeLib().words.length:0} 词）</option>
+      <option value="top800">高频 Top800</option>
+      <option value="top1500">高频 Top1500</option>
+      <option value="new">未掌握（含新词）</option>
+      <option value="wrong">错题本</option>
+      <option value="due">今日复习</option>
+    </select></div>
+  <div class="field"><label>题型</label>
+    <select id="test-mode" class="quiz-input" style="font-size:14px;font-weight:400;padding:9px 12px">
+      <option value="type">看义填词（打字作答）</option>
+      <option value="listen">听音拼写（听朗读打字）</option>
+      <option value="choice">看词选义（四选一）</option>
+    </select></div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" id="test-cancel">取消</button>
+    <button class="btn btn-accent" id="test-start">开始测试</button>
+  </div>`;
+  showModal();
+  $('#test-cancel').addEventListener('click', closeModal);
+  $('#test-start').addEventListener('click', ()=>{
+    const scope=$('#test-scope').value, mode=$('#test-mode').value;
+    const lib=activeLib(); if(!lib) return;
+    const n=buildQueue(lib, scope, 'shuffle').length;
+    if(!n){ toast('该范围没有单词','err'); return; }
+    closeModal();
+    pScope=scope; pMode=mode; testMode=true; testStart=Date.now(); testWrongs=[];
+    renderPractice();
+  });
+}
+function startTestQueue(){
+  // 测试模式：直接按当前范围打乱全量
+  pq=buildQueue(activeLib(), pScope, 'shuffle'); pIdx=0; pScore={right:0,wrong:0};
+}
+function renderPqEmpty(){
+  $('#pq-area').innerHTML=`<div class="card empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div>
+    <h3>词库里还没有单词</h3><p>先去词库导入一份 PDF，或创建示例词库</p>
+    <button class="btn btn-primary" id="pq-goto-lib">去词库</button></div>`;
+  $('#pq-goto-lib').addEventListener('click', ()=>switchView('library'));
+}
+function renderPqCard(){
+  const lib=activeLib(); if(!lib) return;
+  const w=pq[pIdx], done=pIdx, total=pq.length;
+  const wrongs=lib.prog[w.id]&&lib.prog[w.id].wrongs||0;
+  const noTts = !state.settings.tts || (state.settings.voice==='sys' && !('speechSynthesis' in window));
+  if(pMode==='listen'){
+    $('#pq-area').innerHTML=`
+    <div class="card quiz-card">
+      <div class="quiz-q"><span class="q-label">听音拼写</span><div style="display:flex;justify-content:space-between;align-items:center"><span class="quiz-progress">${testMode?'<span class="badge badge-orange">全套测试</span> ':''}${done+1} / ${total}</span>${wrongs?`<span class="badge badge-red">曾错 ${wrongs} 次</span>`:''}</div></div>
+      <div class="quiz-target">${esc(w.meaning)}</div>
+      <div class="listen-box">
+        <button class="btn btn-primary" id="pq-listen" style="padding:10px 20px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>播放发音</button>
+        <span class="muted" style="font-size:12.5px">听发音，拼写出这个单词${noTts?'（朗读未开启，请在设置里打开）':''}</span>
+      </div>
+      <input class="quiz-input" id="pq-input" placeholder="输入你听到的英文单词…" autocomplete="off" spellcheck="false" autofocus>
+      <div class="feedback" id="pq-fb"></div>
+      <div class="quiz-foot">
+        <span class="quiz-score" id="pq-score">正确 <b style="color:var(--success)">${pScore.right}</b> · 错误 <b style="color:var(--danger)">${pScore.wrong}</b></span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" id="pq-skip">跳过</button>
+          <button class="btn btn-primary" id="pq-check">确定</button>
+        </div>
+      </div>
+    </div>`;
+    const input=$('#pq-input'), fb=$('#pq-fb');
+    let answered=false;
+    const play=()=>{ if(noTts){ toast('请先在「设置」中开启单词朗读','err'); return; } speak(w.word); };
+    $('#pq-listen').addEventListener('click', play);
+    const check=()=>{
+      if(answered){ nextPq(); return; }
+      const val=input.value.trim();
+      if(!val){ toast('先输入你听到的单词','err'); return; }
+      answered=true;
+      const ok=normWord(val)===normWord(w.word);
+      if(ok){
+        fb.innerHTML='<span style="color:var(--success);font-weight:700">正确</span> <span class="correct-ans">'+esc(w.word)+'</span>';
+        input.classList.add('right'); pScore.right++; statusWord(lib,w.id,'mastered');
+      } else {
+        fb.innerHTML='<span style="color:var(--danger);font-weight:700">听错了</span> 正确答案：<span class="correct-ans">'+esc(w.word)+'</span> '+esc(w.phonetic||'');
+        input.classList.add('wrong'); pScore.wrong++; addToWrong(lib,w.id);
+        if(testMode) testWrongs.push(w);
+      }
+      $('#pq-check').textContent='下一题'; updatePqScore();
+    };
+    $('#pq-check').addEventListener('click', check);
+    input.addEventListener('keydown', e=>{ if(e.key==='Enter') check(); });
+    $('#pq-skip').addEventListener('click', ()=>{ addToWrong(lib,w.id); pScore.wrong++; if(testMode) testWrongs.push(w); nextPq(); });
+    if(!noTts) setTimeout(play, 250);
+    return;
+  }
+  if(pMode==='recall'){
+    $('#pq-area').innerHTML=`
+    <div class="card quiz-card">
+      <div class="quiz-q"><span class="q-label">看英填中</span><div style="display:flex;justify-content:space-between;align-items:center"><span class="quiz-progress">${testMode?'<span class="badge badge-orange">全套测试</span> ':''}${done+1} / ${total}</span>${wrongs?`<span class="badge badge-red">曾错 ${wrongs} 次</span>`:''}</div></div>
+      <div class="quiz-target">${esc(w.word)}<span class="phon">${esc(w.phonetic||'')}</span>
+        <button id="pq-sound" style="margin-left:6px;vertical-align:middle;color:var(--primary)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>
+      </div>
+      <input class="quiz-input" id="rc-recall" placeholder="回想并输入中文释义…" autocomplete="off" style="font-size:15px;font-weight:500;margin-bottom:12px">
+      <div class="recall-hidden" id="rc-hidden" style="border:2px dashed var(--border);border-radius:12px;padding:16px;text-align:center;color:var(--ink-3);font-size:13px">中文释义已隐藏 — 先在心里或上方输入框回想，再点「显示释义对比」</div>
+      <div class="feedback" id="rc-fb" style="min-height:0;margin-top:10px"></div>
+      <div class="flash-actions" id="rc-btns" style="display:none;margin-top:14px">
+        <button class="btn btn-again" id="rc-unknown">不认识</button>
+        <button class="btn btn-hard" id="rc-fuzzy">模糊</button>
+        <button class="btn btn-good" id="rc-mastered">认识</button>
+      </div>
+      <div class="quiz-foot">
+        <span class="quiz-score" id="rc-progress">第 ${done+1} / ${total} 词</span>
+        <button class="btn btn-primary" id="rc-show"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>显示释义对比</button>
+      </div>
+    </div>`;
+    const input=$('#rc-recall'), hidden=$('#rc-hidden');
+    let revealed=false;
+    const reveal=()=>{
+      if(revealed) return; revealed=true;
+      const ans=input.value.trim();
+      hidden.innerHTML=`<div style="text-align:left;font-size:14px;line-height:1.7"><b style="color:var(--primary)">释义：</b>${esc(w.meaning)}<div style="margin-top:6px;font-size:12.5px;color:var(--ink-2)">${ans?'你的回想：<b style="color:var(--accent)">'+esc(ans)+'</b> 对比一下':'你没有回想，直接看释义了'}</div></div>`;
+      hidden.style.borderColor='var(--accent)';
+      $('#rc-btns').style.display='flex';
+      $('#rc-show').textContent='下一词';
+    };
+    $('#rc-show').addEventListener('click', ()=>{ if(revealed){ nextPq(); return; } reveal(); });
+    input.addEventListener('keydown', e=>{ if(e.key==='Enter'){ reveal(); } });
+    $('#pq-sound').addEventListener('click', ()=>speak(w.word, true));
+    $('#rc-unknown').addEventListener('click', ()=>{ rcStat.again++; statusWord(lib,w.id,'unknown'); addToWrong(lib,w.id); nextPq(); });
+    $('#rc-fuzzy').addEventListener('click', ()=>{ rcStat.hard++; statusWord(lib,w.id,'fuzzy'); nextPq(); });
+    $('#rc-mastered').addEventListener('click', ()=>{ rcStat.good++; statusWord(lib,w.id,'mastered'); nextPq(); });
+    if(state.settings.tts) speak(w.word);
+    return;
+  }
+  if(pMode==='type'){
+    $('#pq-area').innerHTML=`
+    <div class="card quiz-card">
+      <div class="quiz-q"><span class="q-label">看义填词</span><div style="display:flex;justify-content:space-between;align-items:center"><span class="quiz-progress">${testMode?'<span class="badge badge-orange">全套测试</span> ':''}${done+1} / ${total}</span>${wrongs?`<span class="badge badge-red">曾错 ${wrongs} 次</span>`:''}</div></div>
+      <div class="quiz-target">${esc(w.meaning)}</div>
+      <input class="quiz-input" id="pq-input" placeholder="输入英文单词…" autocomplete="off" spellcheck="false" autofocus>
+      <div class="feedback" id="pq-fb"></div>
+      <div class="quiz-foot">
+        <span class="quiz-score" id="pq-score">正确 <b style="color:var(--success)">${pScore.right}</b> · 错误 <b style="color:var(--danger)">${pScore.wrong}</b></span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" id="pq-skip">跳过</button>
+          <button class="btn btn-primary" id="pq-check">确定</button>
+        </div>
+      </div>
+    </div>`;
+    const input=$('#pq-input'), fb=$('#pq-fb');
+    let answered=false;
+    const check=()=>{
+      if(answered){ nextPq(); return; }
+      const val=input.value.trim();
+      if(!val){ toast('先输入一个单词','err'); return; }
+      answered=true;
+      const ok=normWord(val)===normWord(w.word);
+      if(ok){
+        fb.innerHTML='<span style="color:var(--success);font-weight:700">正确</span> <span class="correct-ans">'+esc(w.word)+'</span>';
+        input.classList.add('right'); pScore.right++; statusWord(lib,w.id,'mastered');
+      } else {
+        fb.innerHTML='<span style="color:var(--danger);font-weight:700">答错了</span> 正确答案：<span class="correct-ans">'+esc(w.word)+'</span> '+esc(w.phonetic||'');
+        input.classList.add('wrong'); pScore.wrong++; addToWrong(lib,w.id);
+        if(testMode) testWrongs.push(w);
+      }
+      $('#pq-check').textContent='下一题'; updatePqScore();
+    };
+    $('#pq-check').addEventListener('click', check);
+    input.addEventListener('keydown', e=>{ if(e.key==='Enter') check(); });
+    $('#pq-skip').addEventListener('click', ()=>{ addToWrong(lib,w.id); pScore.wrong++; if(testMode) testWrongs.push(w); nextPq(); });
+  } else {
+    const opts=pickOptions(lib,w);
+    $('#pq-area').innerHTML=`
+    <div class="card quiz-card">
+      <div class="quiz-q"><span class="q-label">看词选义</span><div style="display:flex;justify-content:space-between;align-items:center"><span class="quiz-progress">${testMode?'<span class="badge badge-orange">全套测试</span> ':''}${done+1} / ${total}</span>${wrongs?`<span class="badge badge-red">曾错 ${wrongs} 次</span>`:''}</div></div>
+      <div class="quiz-target">${esc(w.word)}<span class="phon">${esc(w.phonetic||'')}</span>
+        <button id="pq-sound" style="margin-left:6px;vertical-align:middle;color:var(--primary)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>
+      </div>
+      <div class="options" id="pq-opts">${opts.map((o,i)=>`<button class="option" data-i="${i}" data-correct="${o.correct?'1':'0'}">${esc(o.text)}</button>`).join('')}</div>
+      <div class="feedback" id="pq-fb"></div>
+      <div class="quiz-foot">
+        <span class="quiz-score">正确 <b style="color:var(--success)">${pScore.right}</b> · 错误 <b style="color:var(--danger)">${pScore.wrong}</b></span>
+        <button class="btn btn-ghost" id="pq-skip">跳过</button>
+      </div>
+    </div>`;
+    let answered=false;
+    $('#pq-sound').addEventListener('click', ()=>speak(w.word, true));
+    $$('#pq-opts .option').forEach(b=>b.addEventListener('click',()=>{
+      if(answered) return; answered=true;
+      const correct=b.dataset.correct==='1';
+      if(correct){ b.classList.add('right'); pScore.right++; statusWord(lib,w.id,'mastered'); $('#pq-fb').innerHTML='<span style="color:var(--success);font-weight:700">正确</span>'; }
+      else{
+        b.classList.add('wrong'); pScore.wrong++; addToWrong(lib,w.id);
+        if(testMode) testWrongs.push(w);
+        $$('#pq-opts .option').forEach(o=>{ if(o.dataset.correct==='1') o.classList.add('right'); });
+        $('#pq-fb').innerHTML='<span style="color:var(--danger);font-weight:700">答错了</span> 正确答案已标绿';
+      }
+      $$('#pq-opts .option').forEach(o=>o.disabled=true);
+      $('#pq-skip').textContent='下一题'; updatePqScore();
+    }));
+    $('#pq-skip').addEventListener('click', ()=>{ if(answered){ nextPq(); return; } addToWrong(lib,w.id); pScore.wrong++; if(testMode) testWrongs.push(w); nextPq(); });
+  }
+  if(state.settings.tts && pMode==='choice') speak(w.word);
+}
+function pickOptions(lib, cur){
+  const others=lib.words.filter(w=>w.id!==cur.id && normWord(w.word)!==normWord(cur.word));
+  const pool=[];
+  const used=new Set();
+  while(pool.length<3 && others.length){
+    const o=others[Math.floor(Math.random()*others.length)];
+    if(!used.has(normWord(o.word))){ used.add(normWord(o.word)); pool.push(o); }
+    if(pool.length+used.size>Math.min(60,others.length)*2) break;
+  }
+  const arr=[{text:cur.meaning, correct:true}];
+  pool.forEach(o=>arr.push({text:o.meaning, correct:false}));
+  for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}
+  return arr;
+}
+function updatePqScore(){
+  const el=$('#pq-score'); if(el) el.textContent='正确 '+pScore.right+' · 错误 '+pScore.wrong;
+}
+function nextPq(){
+  if(pIdx+1>=pq.length){ renderPqDone(); }
+  else { pIdx++; renderPqCard(); }
+}
+function renderPqDone(){
+  const total=pq.length, right=pScore.right;
+  const pct=total?Math.round(right/total*100):0;
+  const lib=activeLib();
+  if(testMode){ testMode=false; renderTestReport(total, right, pct, lib); return; }
+  if(pMode==='recall'){
+    const n=rcStat.good+rcStat.hard+rcStat.again;
+    $('#pq-area').innerHTML=`
+    <div class="card flash-done">
+      <h3>本轮归类完成</h3>
+      <div class="muted" style="font-size:13px">看英填中 · 共 ${total} 词</div>
+      <div class="stat-line">
+        <div class="stat-pill"><b style="color:var(--success)">${rcStat.good}</b><span>认识</span></div>
+        <div class="stat-pill"><b style="color:var(--accent)">${rcStat.hard}</b><span>模糊</span></div>
+        <div class="stat-pill"><b style="color:var(--danger)">${rcStat.again}</b><span>不认识</span></div>
+        <div class="stat-pill"><b>${n?Math.round(rcStat.good/n*100):0}%</b><span>认识率</span></div>
+      </div>
+      <div style="margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-primary" id="pq-again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>再来一轮</button>
+        <button class="btn btn-accent" id="pq-review">复习「不认识本」</button>
+        <button class="btn btn-ghost" id="pq-switch2">换成填英模式</button>
+      </div>
+    </div>`;
+    $('#pq-again').addEventListener('click', renderPractice);
+    $('#pq-review').addEventListener('click', ()=>{ fcScope='unknown'; switchView('flashcard'); });
+    $('#pq-switch2').addEventListener('click', ()=>{ pMode='type'; renderPractice(); });
+    if(lib) logDay(lib, {flash:total});
+    return;
+  }
+  const modeName={type:'看义填词',listen:'听音拼写',recall:'看英填中',choice:'看词选义'}[pMode]||'练习';
+  $('#pq-area').innerHTML=`
+  <div class="card flash-done">
+    <h3>本轮练习完成</h3>
+    <div class="muted" style="font-size:13px">${modeName} · 共 ${total} 题</div>
+    <div class="stat-line">
+      <div class="stat-pill"><b style="color:var(--success)">${right}</b><span>正确</span></div>
+      <div class="stat-pill"><b style="color:var(--danger)">${pScore.wrong}</b><span>错误</span></div>
+      <div class="stat-pill"><b>${pct}%</b><span>正确率</span></div>
+    </div>
+    <div class="progress" style="max-width:360px;margin:0 auto"><i style="width:${pct}%"></i></div>
+    <div style="margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-primary" id="pq-again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>再练一轮</button>
+      ${pMode==='type'?`<button class="btn btn-ghost" id="pq-switch">换成选义模式</button>`:`<button class="btn btn-ghost" id="pq-switch">换成填词模式</button>`}
+      <button class="btn btn-ghost" id="pq-to-wrong">查看错题</button>
+    </div>
+  </div>`;
+  $('#pq-again').addEventListener('click', renderPractice);
+  $('#pq-switch').addEventListener('click', ()=>{ pMode=pMode==='type'?'choice':'type'; renderPractice(); });
+  $('#pq-to-wrong').addEventListener('click', ()=>switchView('wrong'));
+  if(lib) logDay(lib, {practice:total, right});
+}
+function renderTestReport(total, right, pct, lib){
+  const secs=Math.round((Date.now()-testStart)/1000);
+  const mm=Math.floor(secs/60), ss=secs%60;
+  const seenW=new Set(), wrongUnique=[];
+  testWrongs.forEach(w=>{ const k=normWord(w.word); if(!seenW.has(k)){ seenW.add(k); wrongUnique.push(w); } });
+  const level = pct>=90?'优秀！核心词已基本掌握，可以直接进入下一阶段':pct>=70?'良好，巩固错词后即可进入下一阶段':pct>=50?'及格，建议把错词重测一遍':'薄弱，先回背诵模式过一遍再来测';
+  $('#pq-area').innerHTML=`
+  <div class="card flash-done">
+    <h3>测试完成</h3>
+    <div class="muted" style="font-size:13px">${pScope==='wrong'?'错题本':pScope==='new'?'未掌握':pScope==='due'?'今日复习':pScope==='top800'?'高频Top800':pScope==='top1500'?'高频Top1500':'全部单词'} · ${pMode==='type'?'看义填词':pMode==='listen'?'听音拼写':'看词选义'} · 用时 ${mm}分${ss}秒</div>
+    <div class="stat-line">
+      <div class="stat-pill"><b style="color:var(--success)">${right}</b><span>答对</span></div>
+      <div class="stat-pill"><b style="color:var(--danger)">${pScore.wrong}</b><span>答错</span></div>
+      <div class="stat-pill"><b>${pct}%</b><span>正确率</span></div>
+    </div>
+    <div class="progress" style="max-width:360px;margin:0 auto"><i style="width:${pct}%"></i></div>
+    <p style="margin-top:14px;font-size:13.5px;color:var(--ink-2)">${level}</p>
+    ${wrongUnique.length?`
+    <div style="text-align:left;margin-top:20px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px">本轮错词（${wrongUnique.length} 个，已自动加入错题本）</div>
+      <div class="preview-scroll" style="max-height:300px">
+      <table class="list-table"><colgroup><col style="width:24%"><col style="width:76%"></colgroup>
+      <thead><tr><th>单词</th><th>释义</th></tr></thead><tbody>
+      ${wrongUnique.map(w=>`<tr><td class="word-cell">${esc(w.word)}<button class="play" style="margin-left:6px;color:var(--primary);vertical-align:middle" data-say="${esc(w.word)}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>${w.phonetic?`<div class="phon-cell" style="font-size:11px">${esc(w.phonetic)}</div>`:''}</td><td>${esc(w.meaning)}</td></tr>`).join('')}
+      </tbody></table></div></div>`:''}
+    <div style="margin-top:22px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      ${wrongUnique.length?`<button class="btn btn-primary" id="tr-retry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>重测错词</button>`:''}
+      <button class="btn btn-accent" id="tr-again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>再测一轮</button>
+      <button class="btn btn-ghost" id="tr-flash">回背诵</button>
+    </div>
+  </div>`;
+  $$('[data-say]').forEach(b=>b.addEventListener('click',()=>speak(b.dataset.say)));
+  const rb=$('#tr-retry');
+  if(rb) rb.addEventListener('click', ()=>{ testMode=true; testStart=Date.now(); testWrongs=[]; pScope='wrong'; pq=buildQueue(activeLib(),'wrong','shuffle'); pIdx=0; pScore={right:0,wrong:0}; renderPqCard(); });
+  $('#tr-again').addEventListener('click', ()=>{ testMode=true; testStart=Date.now(); testWrongs=[]; renderPractice(); });
+  $('#tr-flash').addEventListener('click', ()=>switchView('flashcard'));
+  if(lib) logDay(lib, {practice:total, right});
+}
+
+/* ============================================================
+ * 错题本
+ * ============================================================ */
+function renderWrong(){
+  const lib=activeLib();
+  if(!lib){ renderNoLib('错题'); return; }
+  const wrongIds=Object.keys(state.wrongs[lib.id]||{});
+  const words=lib.words.filter(w=>wrongIds.includes(w.id));
+  const cnt=wrongCount(lib);
+  $('#content').innerHTML=`
+  <div class="section-head"><div><h2>错题本</h2><div class="desc">练习或背诵中答错的单词会收录在这里，标记「认识」后自动移出</div></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-ghost" id="wr-retry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>重练错题</button>
+      <button class="btn btn-ghost" id="wr-export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导出错题</button>
+      <button class="btn btn-danger-ghost" id="wr-clear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>清空错题</button>
+    </div></div>
+  <div class="wrong-head"><span class="wrong-count">共 <b style="color:var(--danger)">${cnt}</b> 个错词</span></div>`;
+  if(words.length===0){
+    $('#content').innerHTML+=`<div class="card empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+      <h3>错题本是空的</h3><p>去练习或背诵，答错的单词会自动出现在这里</p>
+      <div style="display:flex;gap:10px;justify-content:center"><button class="btn btn-accent" id="wr-goto-practice">去练习</button><button class="btn btn-ghost" id="wr-goto-flash">去背诵</button></div></div>`;
+    $('#wr-goto-practice').addEventListener('click', ()=>switchView('practice'));
+    $('#wr-goto-flash').addEventListener('click', ()=>switchView('flashcard'));
+  } else {
+    $('#content').innerHTML+=`<div class="card"><div class="preview-scroll" style="max-height:560px">
+    <table class="list-table"><colgroup><col style="width:24%"><col style="width:30%"><col style="width:34%"><col style="width:12%"></colgroup>
+      <thead><tr><th>单词</th><th>音标</th><th>释义</th><th style="text-align:center">错次</th></tr></thead><tbody>`
+      +words.map(w=>{
+        const n=state.wrongs[lib.id][w.id]||0;
+        return `<tr>
+          <td class="word-cell">${esc(w.word)}<button class="play" style="margin-left:6px;color:var(--primary);vertical-align:middle" data-say="${esc(w.word)}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button></td>
+          <td class="phon-cell">${esc(w.phonetic||'')}</td>
+          <td>${esc(w.meaning)}</td>
+          <td style="text-align:center"><span class="badge ${n>=3?'badge-red':n>=2?'badge-orange':'badge-gray'}">${n}</span></td>
+        </tr>`;
+      }).join('')+`</tbody></table></div></div>`;
+    $$('[data-say]').forEach(b=>b.addEventListener('click',()=>speak(b.dataset.say)));
+  }
+  const retry=$('#wr-retry'), clear=$('#wr-clear'), exp=$('#wr-export');
+  if(retry) retry.addEventListener('click', ()=>{ fcScope='wrong'; switchView('flashcard'); });
+  if(exp) exp.addEventListener('click', ()=>exportWords(words, '错题本-'+todayStr()+'.csv'));
+  if(clear) clear.addEventListener('click', ()=>{
+    if(!confirm('清空全部 '+cnt+' 个错词？仅清除错题记录，不影响掌握状态。')) return;
+    state.wrongs[lib.id]={}; save(); renderWrong(); toast('错题已清空');
+  });
+}
+
+/* ============================================================
+ * 三个单词本
+ * ============================================================ */
+function renderNotebook(){
+  const lib=activeLib();
+  if(!lib){ renderNoLib('词本'); return; }
+  const st=progressOf(lib);
+  const books=[
+    { key:'mastered', name:'已掌握本', desc:'见词知义，已完全掌握', count:st.mastered, color:'var(--success)', soft:'var(--success-soft)', icon:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>' },
+    { key:'fuzzy', name:'模糊本', desc:'眼熟但说不准，需要反复巩固', count:st.fuzzy, color:'var(--accent)', soft:'var(--accent-soft)', icon:'<circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>' },
+    { key:'unknown', name:'不认识本', desc:'完全没印象，重点攻坚对象', count:st.unknown, color:'var(--danger)', soft:'var(--danger-soft)', icon:'<path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>' }
+  ];
+  $('#content').innerHTML=`
+  <div class="section-head"><div><h2>三个单词本</h2><div class="desc">背诵时按「认识 / 模糊 / 不认识」归类，自动分入对应本子，随时回来复习</div></div>
+    <button class="btn btn-ghost" id="nb-export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导出全部词表</button></div>
+  <div class="lib-grid">`+books.map(b=>{
+    const pct=st.total?Math.round(b.count/st.total*100):0;
+    return `<div class="card lib-card" data-book="${b.key}">
+      <div class="lib-top">
+        <div class="lib-ico" style="background:${b.soft}"><svg viewBox="0 0 24 24" fill="none" stroke="${b.color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${b.icon}</svg></div>
+        <div style="min-width:0"><div class="lib-name">${b.name}</div><div class="lib-meta">${b.desc}</div></div>
+      </div>
+      <div class="progress"><i style="width:${pct}%;background:${b.color}"></i></div>
+      <div class="lib-progress"><span><b style="color:${b.color};font-size:16px">${b.count}</b> 词</span><span>占全库 ${pct}%</span></div>
+      <div style="display:flex;gap:8px;margin-top:2px">
+        <button class="btn btn-ghost" data-viewlist="${b.key}" style="flex:1;justify-content:center;padding:8px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>查看</button>
+        <button class="btn" data-review="${b.key}" style="flex:1;justify-content:center;padding:8px;background:${b.color};color:#fff">复习</button>
+      </div>
+    </div>`;
+  }).join('')+`</div>
+  <div class="card" style="margin-top:16px;padding:16px 18px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <b style="font-size:13.5px">学习建议</b>
+      <span class="muted" style="font-size:12.5px">先清「不认识本」→ 再稳「模糊本」→ 最后巩固「已掌握本」。每背一轮，三个本子的词会流动起来。</span>
+      <button class="btn btn-accent" id="nb-start" style="margin-left:auto"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>开始背「不认识本」</button>
+    </div>
+  </div>`;
+  $$('[data-viewlist]').forEach(b=>b.addEventListener('click',()=>showBookList(lib,b.dataset.viewlist)));
+  $$('[data-review]').forEach(b=>b.addEventListener('click',()=>{ fcScope=b.dataset.review; switchView('flashcard'); }));
+  $('#nb-start').addEventListener('click',()=>{ fcScope='unknown'; switchView('flashcard'); });
+  $('#nb-export').addEventListener('click',()=>exportWords(lib.words, '词表-'+lib.name+'-'+todayStr()+'.csv'));
+}
+function showBookList(lib, key){
+  const names={mastered:'已掌握本',fuzzy:'模糊本',unknown:'不认识本'};
+  const colors={mastered:'var(--success)',fuzzy:'var(--accent)',unknown:'var(--danger)'};
+  const words=lib.words.filter(w=>(lib.prog[w.id]&&lib.prog[w.id].status)===key);
+  const box=$('#modal-box');
+  box.innerHTML=`<h3>${names[key]} · ${words.length} 词</h3>
+    <div class="preview-scroll" style="max-height:55vh">
+    <table class="list-table"><colgroup><col style="width:24%"><col style="width:76%"></colgroup>
+      <thead><tr><th>单词</th><th>释义</th></tr></thead><tbody>
+      ${words.slice(0,600).map(w=>`<tr><td class="word-cell">${esc(w.word)}<button class="play" style="margin-left:6px;color:var(--primary);vertical-align:middle" data-say="${esc(w.word)}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>${w.phonetic?`<div class="phon-cell" style="font-size:11px">${esc(w.phonetic)}</div>`:''}</td><td>${esc(w.meaning)}</td></tr>`).join('')}
+      ${words.length>600?`<tr><td colspan="2" style="text-align:center;color:var(--ink-3)">仅显示前 600 个，其余在背诵中复习</td></tr>`:''}
+      </tbody></table></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="bk-export" style="margin-right:auto">导出本子</button>
+      <button class="btn btn-ghost" id="bk-close">关闭</button>
+      <button class="btn" id="bk-review" style="background:${colors[key]};color:#fff">复习这本</button>
+    </div>`;
+  showModal();
+  $$('[data-say]').forEach(b=>b.addEventListener('click',()=>speak(b.dataset.say)));
+  $('#bk-export').addEventListener('click',()=>exportWords(words, names[key]+'-'+todayStr()+'.csv'));
+  $('#bk-close').addEventListener('click', closeModal);
+  $('#bk-review').addEventListener('click', ()=>{ closeModal(); fcScope=key; switchView('flashcard'); });
+}
+
+/* ============================================================
+ * 单词总表
+ * ============================================================ */
+let wsFilter='all', wsPage=1, wsSearch='';
+function renderWordsheet(){
+  const lib=activeLib();
+  if(!lib){ renderNoLib('总表'); return; }
+  const stOf=w=>lib.prog[w.id]&&lib.prog[w.id].status;
+  const cnt={all:lib.words.length, mastered:0, fuzzy:0, unknown:0, new:0};
+  lib.words.forEach(w=>{ const s=stOf(w); if(s==='mastered')cnt.mastered++; else if(s==='fuzzy'||s==='learning')cnt.fuzzy++; else if(s==='unknown')cnt.unknown++; else cnt.new++; });
+  const q=(wsSearch||'').trim().toLowerCase();
+  const list=lib.words.filter(w=>{
+    const s=stOf(w);
+    if(wsFilter==='mastered'&&s!=='mastered') return false;
+    if(wsFilter==='fuzzy'&&!(s==='fuzzy'||s==='learning')) return false;
+    if(wsFilter==='unknown'&&s!=='unknown') return false;
+    if(wsFilter==='new'&&s&&s!=='new') return false;
+    if(q && !(w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q))) return false;
+    return true;
+  });
+  const pageSize=50, pages=Math.max(1,Math.ceil(list.length/pageSize));
+  if(wsPage>pages) wsPage=pages;
+  const slice=list.slice((wsPage-1)*pageSize, wsPage*pageSize);
+  const chip=(key,label,n)=>{ const cls='chip '+(wsFilter===key?'active':''); return `<button class="${cls}" data-f="${key}">${label} <b>${n}</b></button>`; };
+  $('#content').innerHTML=`
+  <div class="section-head"><div><h2>单词总表</h2><div class="desc">全库单词一览，直接在表里标记掌握程度；做完一轮后可到这里筛选四类词</div></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-ghost" id="ws-export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导出当前筛选</button>
+      <div class="search-box" style="max-width:240px;margin-left:0">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+      <input id="ws-search" placeholder="搜索单词或释义…" value="${esc(wsSearch)}" autocomplete="off" style="border:none;background:none;outline:none;width:100%;font-size:13px">
+    </div></div></div>
+  <div class="ws-chips">
+    ${chip('all','全部',cnt.all)}${chip('mastered','已掌握',cnt.mastered)}${chip('fuzzy','模糊',cnt.fuzzy)}${chip('unknown','不认识',cnt.unknown)}${chip('new','未选择',cnt.new)}
+  </div>`;
+  if(list.length===0){
+    $('#content').innerHTML+=`<div class="card empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+      <h3>没有符合条件的单词</h3><p>换个筛选条件或搜索词试试</p></div>`;
+  } else {
+    $('#content').innerHTML+=`<div class="card">
+    <div class="preview-scroll" style="max-height:62vh">
+    <table class="list-table"><colgroup><col style="width:22%"><col style="width:24%"><col style="width:34%"><col style="width:20%"></colgroup>
+      <thead><tr><th>单词</th><th>音标</th><th>释义</th><th style="text-align:center">掌握程度</th></tr></thead><tbody>
+      ${slice.map(w=>{
+        const s=stOf(w);
+        const unmarked=(!s||s==='new');
+        return `<tr>
+          <td class="word-cell">${esc(w.word)}<button class="play" style="margin-left:6px;color:var(--primary);vertical-align:middle" data-say="${esc(w.word)}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>${unmarked?'<span class="badge badge-gray" style="margin-left:4px">未选</span>':''}</td>
+          <td class="phon-cell">${esc(w.phonetic||'')}</td>
+          <td>${esc(w.meaning)}</td>
+          <td style="text-align:center;white-space:nowrap">
+            <button class="ws-btn ${s==='mastered'?'on-g':''}" data-set="mastered" data-id="${w.id}">认识</button>
+            <button class="ws-btn ${s==='fuzzy'||s==='learning'?'on-o':''}" data-set="fuzzy" data-id="${w.id}">模糊</button>
+            <button class="ws-btn ${s==='unknown'?'on-r':''}" data-set="unknown" data-id="${w.id}">不认识</button>
+          </td>
+        </tr>`; }).join('')}
+      </tbody></table></div>
+      <div class="ws-pager">
+        <button id="ws-prev" ${wsPage<=1?'disabled':''}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <span>${list.length? (wsPage-1)*pageSize+1 : 0}–${Math.min(wsPage*pageSize,list.length)} / ${list.length} 词</span>
+        <button id="ws-next" ${wsPage>=pages?'disabled':''}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+      </div></div>`;
+    $$('[data-say]').forEach(b=>b.addEventListener('click',()=>speak(b.dataset.say)));
+    $$('.ws-btn').forEach(b=>b.addEventListener('click',()=>{
+      statusWord(lib, b.dataset.id, b.dataset.set);
+      renderWordsheet();
+    }));
+    $('#ws-prev').addEventListener('click',()=>{ if(wsPage>1){ wsPage--; renderWordsheet(); } });
+    $('#ws-next').addEventListener('click',()=>{ if(wsPage<pages){ wsPage++; renderWordsheet(); } });
+  }
+  $$('.chip').forEach(c=>c.addEventListener('click',()=>{ wsFilter=c.dataset.f; wsPage=1; renderWordsheet(); }));
+  const si=$('#ws-search');
+  let wsTimer=null;
+  si.addEventListener('input',()=>{ clearTimeout(wsTimer); wsTimer=setTimeout(()=>{ wsSearch=si.value; wsPage=1; renderWordsheet(); },250); });
+  $('#ws-export').addEventListener('click',()=>exportWords(list, '筛选词表-'+wsFilter+'-'+todayStr()+'.csv'));
+}
+
+/* ============================================================
+ * 统计
+ * ============================================================ */
+function renderStats(){
+  const lib=activeLib();
+  if(!lib){ renderNoLib('统计'); return; }
+  const st=progressOf(lib);
+  const pct=st.total?Math.round(st.mastered/st.total*100):0;
+  const today=state.dayLog[todayStr()]||{flash:0,practice:0,right:0};
+  const acc=today.practice?Math.round(today.right/today.practice*100):0;
+  const week=getWeekLog();
+  $('#content').innerHTML=`
+  <div class="section-head"><div><h2>学习统计</h2><div class="desc">「${esc(lib.name)}」的掌握情况与每日学习记录</div></div></div>
+  <div class="stats-grid">
+    <div class="card stat-card"><div class="s-ico" style="background:var(--primary-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.9" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><div class="s-num">${st.total}</div><div class="s-label">词库总量</div></div>
+    <div class="card stat-card"><div class="s-ico" style="background:var(--success-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div class="s-num" style="color:var(--success)">${st.mastered}</div><div class="s-label">已掌握</div></div>
+    <div class="card stat-card"><div class="s-ico" style="background:var(--accent-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div><div class="s-num" style="color:var(--accent)">${st.fuzzy}</div><div class="s-label">模糊</div></div>
+    <div class="card stat-card"><div class="s-ico" style="background:var(--danger-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="1.9" stroke-linecap="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div><div class="s-num" style="color:var(--danger)">${st.unknown}</div><div class="s-label">不认识</div></div>
+    <div class="card stat-card"><div class="s-ico" style="background:var(--bg)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--ink-2)" stroke-width="1.9" stroke-linecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/></svg></div><div class="s-num">${wrongCount(lib)}</div><div class="s-label">错题数</div></div>
+  </div>
+  <div class="card" style="padding:22px;margin-bottom:20px">
+    <div class="ring-row">
+      <div class="ring-wrap">
+        <svg width="150" height="150" viewBox="0 0 150 150">
+          <circle cx="75" cy="75" r="62" fill="none" stroke="#EEF1F4" stroke-width="14"/>
+          <circle cx="75" cy="75" r="62" fill="none" stroke="#24435E" stroke-width="14" stroke-linecap="round" stroke-dasharray="${pct*3.896} 388.6" id="ring-c"/>
+        </svg>
+        <div class="ring-center"><b>${pct}%</b><span>掌握率</span></div>
+      </div>
+      <div class="ring-legend">
+        <div class="lg"><span class="dot" style="background:var(--success)"></span>已掌握 <b>${st.mastered}</b></div>
+        <div class="lg"><span class="dot" style="background:var(--accent)"></span>模糊 <b>${st.fuzzy}</b></div>
+        <div class="lg"><span class="dot" style="background:var(--danger)"></span>不认识 <b>${st.unknown}</b></div>
+        <div class="lg"><span class="dot" style="background:#D8DEE5"></span>未开始 <b>${st.new}</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="stats-grid">
+    <div class="card stat-card"><div class="s-ico" style="background:var(--primary-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 10h18"/></svg></div><div class="s-num">${today.flash}</div><div class="s-label">今日背诵词数</div></div>
+    <div class="card stat-card"><div class="s-ico" style="background:var(--accent-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.8 2.8 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg></div><div class="s-num">${today.practice}</div><div class="s-label">今日练习题数</div></div>
+    <div class="card stat-card"><div class="s-ico" style="background:var(--success-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="1.9" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div class="s-num" style="color:var(--success)">${today.practice?acc:'—'}${today.practice?'%':''}</div><div class="s-label">今日练习正确率</div></div>
+    <div class="card stat-card"><div class="s-ico" style="background:var(--bg)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--ink-2)" stroke-width="1.9" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div><div class="s-num">${state.settings.dailyGoal}</div><div class="s-label">每日目标（词）</div></div>
+  </div>
+  <div class="card" style="padding:22px">
+    <h3 style="font-family:var(--font-serif);font-size:15.5px;margin-bottom:6px">最近 7 天学习量</h3>
+    <div class="muted" style="font-size:12px;margin-bottom:10px">背诵词数 + 练习题数</div>
+    <div class="week-bars">${week.map(d=>{
+      const v=d.flash+d.practice, max=weekMax;
+      const h=max?Math.max(6,Math.round(v/max*90)):0;
+      return `<div class="week-bar"><div class="bar ${v?'':'zero'}" style="height:${h}px"></div><span>${d.label}</span></div>`;
+    }).join('')}</div>
+  </div>`;
+}
+function getWeekLog(){
+  const out=[]; const now=new Date(); let max=0;
+  for(let i=6;i>=0;i--){
+    const d=new Date(now); d.setDate(now.getDate()-i);
+    const key=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+    const v=state.dayLog[key]||{flash:0,practice:0,right:0};
+    const label=(d.getMonth()+1)+'/'+d.getDate();
+    out.push({label, flash:v.flash||0, practice:v.practice||0, right:v.right||0});
+    max=Math.max(max,(v.flash||0)+(v.practice||0));
+  }
+  return {days:out, weekMax:max};
+}
+let weekMax=0;
+function logDay(lib, data){
+  const t=todayStr();
+  state.dayLog[t]=state.dayLog[t]||{flash:0,practice:0,right:0};
+  if(data.flash) state.dayLog[t].flash+=data.flash;
+  if(data.practice){ state.dayLog[t].practice+=data.practice; state.dayLog[t].right+=(data.right||0); }
+  save();
+}
+
+/* ============================================================
+ * 空态 / 设置 / 搜索 / 初始化
+ * ============================================================ */
+function renderNoLib(viewName){
+  $('#content').innerHTML=`<div class="card empty" style="max-width:520px;margin:8vh auto">
+    <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+    <h3>还没有选择词库</h3><p>${viewName}功能需要一个词库才能使用，先去词库导入 PDF 或创建示例词库</p>
+    <button class="btn btn-accent" id="no-lib-goto">去词库</button></div>`;
+  $('#no-lib-goto').addEventListener('click', ()=>switchView('library'));
+}
+function openSettings(){
+  const box=$('#modal-box');
+  box.innerHTML=`
+  <h3>设置</h3>
+  <div class="modal-row"><div><div class="mr-title">每日目标</div><div class="mr-desc">用于统计页参考，不强制提醒</div></div>
+    <input type="number" id="set-goal" min="5" max="500" step="5" value="${state.settings.dailyGoal}" style="width:80px;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;text-align:center;outline:none"></div>
+  <div class="modal-row"><div><div class="mr-title">单词朗读（TTS）</div><div class="mr-desc">背诵和练习时自动朗读英文单词</div></div>
+    <label class="switch"><input type="checkbox" id="set-tts" ${state.settings.tts?'checked':''}><span class="track"></span></label></div>
+  <div class="modal-row"><div><div class="mr-title">真人发音（联网）</div><div class="mr-desc">优先使用真人录音朗读（与百词斩同类），断网时自动回退系统合成音</div></div>
+    <label class="switch"><input type="checkbox" id="set-voice" ${state.settings.voice!=='sys'?'checked':''}><span class="track"></span></label></div>
+  <div class="modal-row"><div><div class="mr-title">口音</div><div class="mr-desc">真人发音使用美音或英音</div></div>
+    <select id="set-accent" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none">
+      <option value="2" ${state.settings.accent!==1?'selected':''}>美音</option>
+      <option value="1" ${state.settings.accent===1?'selected':''}>英音</option>
+    </select></div>
+  <div class="modal-row"><div><div class="mr-title">导出数据</div><div class="mr-desc">把词库与学习记录导出为 JSON 文件</div></div>
+    <button class="btn btn-ghost" id="set-export">导出</button></div>
+  <div class="modal-row"><div><div class="mr-title">导入数据</div><div class="mr-desc">恢复之前导出的备份文件</div></div>
+    <button class="btn btn-ghost" id="set-import">导入</button><input type="file" id="set-import-file" accept=".json" style="display:none"></div>
+  <div class="modal-row"><div><div class="mr-title" style="color:var(--danger)">清空全部数据</div><div class="mr-desc">删除所有词库与学习记录（不可恢复）</div></div>
+    <button class="btn btn-danger-ghost" id="set-clear">清空</button></div>
+  <div class="modal-actions"><button class="btn btn-primary" id="set-close">完成</button></div>`;
+  showModal();
+  const goal=$('#set-goal'); goal.addEventListener('change', ()=>{ state.settings.dailyGoal=Math.max(5,Math.min(500,+goal.value||50)); save(); });
+  const tts=$('#set-tts'); tts.addEventListener('change', ()=>{ state.settings.tts=tts.checked; save(); });
+  const voice=$('#set-voice'); voice.addEventListener('change', ()=>{ state.settings.voice=voice.checked?'real':'sys'; save(); });
+  const accent=$('#set-accent'); accent.addEventListener('change', ()=>{ state.settings.accent=+accent.value; save(); });
+  $('#set-export').addEventListener('click', ()=>{
+    const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='词汇工坊备份-'+todayStr()+'.json'; a.click();
+    URL.revokeObjectURL(a.href); toast('数据已导出');
+  });
+  $('#set-import').addEventListener('click', ()=>$('#set-import-file').click());
+  $('#set-import-file').addEventListener('change', e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=()=>{ try{
+      const d=JSON.parse(r.result);
+      if(!d||!d.libs) throw new Error('格式不正确');
+      state=d; save(); refreshLibPicker(); closeModal(); renderLibrary();
+      toast('数据已恢复');
+    }catch(err){ toast('导入失败：'+err.message,'err'); } };
+    r.readAsText(f);
+  });
+  $('#set-clear').addEventListener('click', ()=>{
+    if(!confirm('确定清空全部数据？所有词库和学习记录将被删除，且不可恢复。')) return;
+    localStorage.removeItem(STORE_KEY); state=load(); refreshLibPicker(); closeModal(); renderLibrary();
+    toast('数据已清空');
+  });
+  $('#set-close').addEventListener('click', ()=>{ save(); closeModal(); });
+}
+function showModal(){ $('#modal-mask').classList.add('show'); }
+function closeModal(){ $('#modal-mask').classList.remove('show'); }
+$('#modal-mask').addEventListener('click', e=>{ if(e.target.id==='modal-mask') closeModal(); });
+$('#btn-settings').addEventListener('click', openSettings);
+
+/* ---------- 全局搜索 ---------- */
+let searchTimer=null;
+$('#global-search').addEventListener('input', e=>{
+  clearTimeout(searchTimer);
+  const q=e.target.value.trim();
+  searchTimer=setTimeout(()=>{
+    const lib=activeLib();
+    if(!q || !lib){ return; }
+    const hits=lib.words.filter(w=>w.word.toLowerCase().includes(q.toLowerCase()) || w.meaning.includes(q));
+    if(!hits.length){ toast('没有匹配的单词','err'); return; }
+    showSearchResult(hits.slice(0,20), lib);
+  },260);
+});
+function showSearchResult(hits, lib){
+  const box=$('#modal-box');
+  box.innerHTML=`<h3>搜索结果 · ${esc(lib.name)}</h3>
+    <div style="max-height:50vh;overflow:auto">
+    <table class="list-table"><colgroup><col style="width:26%"><col style="width:74%"></colgroup>
+      <thead><tr><th>单词</th><th>释义</th></tr></thead><tbody>
+      ${hits.map(w=>`<tr><td class="word-cell">${esc(w.word)}${w.phonetic?`<div class="phon-cell" style="font-size:11px">${esc(w.phonetic)}</div>`:''}</td><td>${esc(w.meaning)}</td></tr>`).join('')}
+      </tbody></table></div>
+    <div class="modal-actions"><button class="btn btn-primary" id="sr-close">关闭</button></div>`;
+  showModal();
+  $('#sr-close').addEventListener('click', closeModal);
+}
+
+/* ---------- 初始化 ---------- */
+function init(){
+  // 自动建内置核心词库（若尚未存在，不覆盖用户已有数据）
+  if(typeof BUILTIN_CORE!=='undefined' && BUILTIN_CORE && Array.isArray(BUILTIN_CORE.words) && BUILTIN_CORE.words.length && !state.libs['core']){
+    state.libs['core']={ id:'core',
+      name:BUILTIN_CORE.name||'示例词库',
+      source:BUILTIN_CORE.source||'内置词库',
+      createdAt:Date.now(), prog:{},
+      words:BUILTIN_CORE.words.map(w=>({ id:uid(), word:String(w.word||''), phonetic:String(w.phonetic||''), meaning:String(w.meaning||'').trim(), freq:w.freq||0 })) };
+  }
+  // 旧数据兼容：为已有状态但无复习排期的词补上 SRS 排期
+  Object.values(state.libs).forEach(backfillSrs);
+  refreshLibPicker();
+  if(!state.activeId && Object.keys(state.libs).length) setActiveLib(Object.keys(state.libs)[0]);
+  switchView('library');
+}
+if(typeof pdfjsLib!=='undefined' && pdfjsLib.GlobalWorkerOptions){
+  pdfjsLib.GlobalWorkerOptions.workerSrc='assets/pdf.worker.min.js';
+} else {
+  toast('PDF 解析组件未加载，导入功能不可用', 'err');
+}
+init();
+</script>
+</body>
+</html>
